@@ -19,7 +19,6 @@
 
 package org.matsim.gui;
 
-import org.matsim.project.RunMatsim;
 import org.matsim.run.gui.Gui;
 
 public class MATSimGUI {
