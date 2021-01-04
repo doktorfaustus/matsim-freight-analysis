@@ -1,5 +1,6 @@
 package org.matsim.project;
 
+import com.graphhopper.jsprit.core.problem.job.Shipment;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.ActivityEndEventHandler;
@@ -29,10 +30,16 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
     private final Network network;
     HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
     HashMap<Id<Vehicle>, VehicleTracker> vehicleTrackers = new HashMap();
+    HashMap<Id<Shipment>, ShipmentTracker> shipmentTrackers = new HashMap();
 
     public FreightAnalysisEventHandler(Network network, Vehicles vehicles) {
         this.network=network;
         this.vehicles=vehicles;
+        for (Vehicle vehicle: this.vehicles.getVehicles().values()){
+            if  (vehicle.getType().getCapacity().getOther() > 0){
+                vehicleTrackers.put(vehicle.getId(),new VehicleTracker(vehicle.getType()));
+            }
+        }
     }
 
     public void handleEvent(IterationEndsEvent e){
@@ -46,7 +53,6 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
     @Override
     public void handleEvent(ActivityStartEvent activityStartEvent) {
-
     }
 
     @Override
@@ -56,11 +62,13 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
     @Override
     public void handleEvent(LinkLeaveEvent linkLeaveEvent) {
-        Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
-        Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
+        if (vehiclesOnLink.containsKey(linkLeaveEvent.getVehicleId())) {
+            Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
+            Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
 
-        if (vehicles.getVehicleTypes().get(linkLeaveEvent.getVehicleId()).getDescription()=="heavy"){
-            vehicleTrackers.get(linkLeaveEvent.getVehicleId()).addLeg(onLinkTime,linkLength,false);
+            if (vehicles.getVehicles().get(linkLeaveEvent.getVehicleId()).getType().getCapacity().getOther() > 0) {
+                vehicleTrackers.get(linkLeaveEvent.getVehicleId()).addLeg(onLinkTime, linkLength, false);
+            }
         }
     }
 
@@ -77,7 +85,8 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
     public void export(){
         try {
             BufferedWriter out = new BufferedWriter(new FileWriter("vehicleStatsExport.tsv"));
-
+            out.write("VehicleType  travelTime  travelDistance  emptyTimeShare   emptyDistanceShare");
+            out.newLine();
             for(VehicleTracker vt : vehicleTrackers.values()){
                 out.write(vt.toString());
                 out.newLine();

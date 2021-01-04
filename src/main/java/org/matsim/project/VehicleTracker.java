@@ -4,17 +4,16 @@ import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.population.Leg;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.VehicleType;
 
 public class VehicleTracker {
-    Id<Vehicle> vehicleId;
-    String vehicleType;
-    Double travelTime;
-    Double travelDistance;
-    Double emptyTime;
-    Double emptyDistance;
+    VehicleType vehicleType;
+    Double travelTime=0.0;
+    Double travelDistance=0.0;
+    Double emptyTime=0.0;
+    Double emptyDistance=0.0;
 
-   public VehicleTracker(Id<Vehicle> id, String vehicleType){
-       this.vehicleId = id;
+   public VehicleTracker(VehicleType vehicleType){
        this.vehicleType = vehicleType;
    }
 
@@ -32,6 +31,6 @@ public class VehicleTracker {
    public String toString(){
        Double emptyTimeShare = (emptyTime / travelTime);
        Double emptyDistanceShare = (emptyDistance / travelDistance);
-       return vehicleId.toString() + "  " + vehicleType.toString() + "  " + travelTime.toString() + "   " + travelDistance.toString() + "   " + emptyTimeShare.toString() + "   " + emptyDistanceShare.toString();
+       return vehicleType.getId().toString() + "  " + travelTime.toString() + "   " + travelDistance.toString() + "   " + emptyTimeShare.toString() + "   " + emptyDistanceShare.toString();
    }
 }

@@ -12,10 +12,7 @@ import org.matsim.core.events.MatsimEventsReader;
 import org.matsim.core.events.handler.EventHandler;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
-import org.matsim.vehicles.MatsimVehicleReader;
-import org.matsim.vehicles.Vehicle;
-import org.matsim.vehicles.VehicleUtils;
-import org.matsim.vehicles.Vehicles;
+import org.matsim.vehicles.*;
 
 import java.io.File;
 
@@ -26,7 +23,10 @@ public class RunFreightAnalysis {
         rfa.runAnalysis();
     }
 
-   private void runAnalysis(){//Dateipfade uebergeben lassen
+    public RunFreightAnalysis() {
+    }
+
+    private void runAnalysis(){//Dateipfade uebergeben lassen
        File networkFile = new File("output100/output_network.xml.gz");
        File carrierFile = new File("output100/output_carriers.xml.gz");
        File vehicleTypeFile = new File("output100/output_VehicleTypes.xml.gz");
@@ -37,18 +37,21 @@ public class RunFreightAnalysis {
 
        //CarrierVehicleTypes vehicleTypes = new CarrierVehicleTypes();
        //new CarrierVehicleTypeReader(vehicleTypes).readFile(carrierFile.getAbsolutePath());
-       // Vehicles vehicles = new Ve;
        // MatsimVehicleReader.VehicleReader vehicleReader = new MatsimVehicleReader.VehicleReader(vehicles);
-       vehicleReader.readFile(vehiclesFile.getAbsolutePath());
+
+        Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
+
+       new  MatsimVehicleReader(vehicles).readFile(vehiclesFile.getAbsolutePath());
 
        EventsManager eventsManager = EventsUtils.createEventsManager();
-       EventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles);
+       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles);
        eventsManager.addHandler(freightEventHandler);
 
        eventsManager.initProcessing();
        MatsimEventsReader eventsReader = new MatsimEventsReader(eventsManager);
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
+       freightEventHandler.export();
     }
 
 
