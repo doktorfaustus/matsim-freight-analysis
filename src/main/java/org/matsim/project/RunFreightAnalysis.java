@@ -2,9 +2,7 @@ package org.matsim.project;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
-import org.matsim.contrib.freight.carrier.Carrier;
-import org.matsim.contrib.freight.carrier.CarrierVehicleTypeReader;
-import org.matsim.contrib.freight.carrier.CarrierVehicleTypes;
+import org.matsim.contrib.freight.carrier.*;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.events.EventsUtils;
@@ -38,13 +36,14 @@ public class RunFreightAnalysis {
        //CarrierVehicleTypes vehicleTypes = new CarrierVehicleTypes();
        //new CarrierVehicleTypeReader(vehicleTypes).readFile(carrierFile.getAbsolutePath());
        // MatsimVehicleReader.VehicleReader vehicleReader = new MatsimVehicleReader.VehicleReader(vehicles);
+       Carriers carriers = new Carriers();
+       new CarrierPlanXmlReader(carriers).readFile(carrierFile.getAbsolutePath());
 
-        Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
-
+       Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
        new  MatsimVehicleReader(vehicles).readFile(vehiclesFile.getAbsolutePath());
 
        EventsManager eventsManager = EventsUtils.createEventsManager();
-       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles);
+       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles, carriers);
        eventsManager.addHandler(freightEventHandler);
 
        eventsManager.initProcessing();
