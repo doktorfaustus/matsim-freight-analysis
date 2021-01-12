@@ -6,7 +6,7 @@ import org.matsim.vehicles.Vehicle;
 
 import java.util.HashMap;
 
-public class VehicleTracking{
+public class FreightAnalysisVehicleTracking {
     HashMap<Id<Vehicle>, VehicleTracker> trackers = new HashMap<>();
 
    public void addTracker(Vehicle vehicle){

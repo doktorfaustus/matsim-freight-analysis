@@ -10,6 +10,7 @@ import org.matsim.core.events.MatsimEventsReader;
 import org.matsim.core.events.handler.EventHandler;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.network.io.MatsimNetworkReader;
+import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.vehicles.*;
 
 import java.io.File;
@@ -35,8 +36,9 @@ public class RunFreightAnalysis {
 
        //CarrierVehicleTypes vehicleTypes = new CarrierVehicleTypes();
        //new CarrierVehicleTypeReader(vehicleTypes).readFile(carrierFile.getAbsolutePath());
-       // MatsimVehicleReader.VehicleReader vehicleReader = new MatsimVehicleReader.VehicleReader(vehicles);
+
        Carriers carriers = new Carriers();
+//     Carriers carriers2 = new Carriers();
        new CarrierPlanXmlReader(carriers).readFile(carrierFile.getAbsolutePath());
 
        Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
