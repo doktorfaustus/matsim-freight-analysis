@@ -27,7 +27,8 @@ public class RunFreightAnalysis {
 
     private void runAnalysis(){//Dateipfade uebergeben lassen
        File networkFile = new File("output100/output_network.xml.gz");
-       File carrierFile = new File("output100/output_carriers.xml.gz");
+       //File carrierFile = new File("output100/output_carriers.xml");
+        File carrierFile = new File("output100/carrierReadtest.xml");
        File vehicleTypeFile = new File("output100/output_VehicleTypes.xml.gz");
        File vehiclesFile = new File("output100/output_allVehicles.xml.gz");
        File eventsFile = new File("output100/output_events.xml.gz");
@@ -41,7 +42,7 @@ public class RunFreightAnalysis {
        new  MatsimVehicleReader(vehicles).readFile(vehiclesFile.getAbsolutePath());
 
        EventsManager eventsManager = EventsUtils.createEventsManager();
-       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles, vehicleTypes, carriers);
+       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles,  carriers);
        eventsManager.addHandler(freightEventHandler);
 
        eventsManager.initProcessing();

@@ -2,19 +2,16 @@ package org.matsim.project;
 
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
-import org.matsim.api.core.v01.events.handler.ActivityEndEventHandler;
-import org.matsim.api.core.v01.events.handler.ActivityStartEventHandler;
-import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
-import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler;
+import org.matsim.api.core.v01.events.handler.*;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.freight.carrier.Carrier;
 import org.matsim.contrib.freight.carrier.CarrierVehicleTypes;
 import org.matsim.contrib.freight.carrier.Carriers;
 import org.matsim.contrib.freight.carrier.ScheduledTour;
 import org.matsim.contrib.freight.events.ShipmentDeliveredEvent;
-import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
+//import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
 import org.matsim.contrib.freight.events.ShipmentPickedUpEvent;
-import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
+//import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
 import org.matsim.core.controler.events.IterationEndsEvent;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.Vehicles;
@@ -25,32 +22,27 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 
-public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler {
+public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler{
 
     private final Vehicles vehicles;
     private final Network network;
     private final Carriers carriers;
-    private final CarrierVehicleTypes carrierVehicleTypes;
     HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
     FreightAnalysisVehicleTracking freightAnalysisVehicleTracking = new FreightAnalysisVehicleTracking();
     FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
 
-    public FreightAnalysisEventHandler(Network network, Vehicles vehicles, CarrierVehicleTypes vehicleTypes, Carriers carriers) {
+    public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
         this.network=network;
         this.vehicles=vehicles;
         this.carriers=carriers;
-        this.carrierVehicleTypes=vehicleTypes;
 
-
-        for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
-            for (Iterator it = carrier.getSelectedPlan().getScheduledTours().iterator(); it.hasNext();){
-                ScheduledTour tour = (ScheduledTour) it.next();
-                Id<Vehicle> tourVehId=tour.getVehicle().getId();
-                if (vehicles.getVehicles().containsKey(tourVehId)) {
-                    freightAnalysisVehicleTracking.addTracker(tourVehId, vehicles.getVehicles().get(tourVehId).getType(), carrier.getId());
+        //for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
+        for(Vehicle vehicle:vehicles.getVehicles().values()){
+                if (vehicle.getId().toString().contains("freight")){
+                   freightAnalysisVehicleTracking.addTracker(vehicle.getId(), vehicle.getType() );//CarrierId hier noch nicht bekannt
                 }
-            }
         }
+
     }
 
     public void handleEvent(IterationEndsEvent e){
@@ -85,30 +77,28 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 
 
-    @Override
-    public void handleEvent(ShipmentDeliveredEvent event) {
-        if (!shipmentTracking.shipments.containsKey(event.getShipment().getId())){
-            shipmentTracking.addTracker(event.getShipment(), event.getCarrierId(), event.getDriverId() );
-        }
-        shipmentTracking.trackEvent(event);
-    }
-
-    @Override
-    public void handleEvent(ShipmentPickedUpEvent event) {
-
-    }
-
+//    @Override
+//    public void handleEvent(ShipmentDeliveredEvent event) {
+//        if (!shipmentTracking.shipments.containsKey(event.getShipment().getId())){
+//            shipmentTracking.addTracker(event.getShipment(), event.getDriverId() );
+//        }
+//        shipmentTracking.trackEvent(event);
+//    }
+//
+//    @Override
+//    public void handleEvent(ShipmentPickedUpEvent event) {
+//
+//    }
+//
     public void export(){
         try {
             BufferedWriter out = new BufferedWriter(new FileWriter("vehicleStatsExport.tsv"));
-            out.write("VehicleType  travelTime  travelDistance  emptyTimeShare   emptyDistanceShare");
+            out.write("VehicleType  CarrierId  travelTime  travelDistance  cost");
             out.newLine();
             HashMap<Id, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
             for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
                 VehicleTracker tracker = trackers.get(vehId);
-                Double emptyTimeShare = (tracker.emptyTime / tracker.travelTime);
-                Double emptyDistanceShare = (tracker.emptyDistance / tracker.travelDistance);
-                out.write(vehId.toString() + tracker.typeIdString + "  " + tracker.carrierId + "    " + tracker.travelTime.toString() + "   " + tracker.travelDistance.toString() + "   " + tracker.cost.toString());
+                out.write(vehId.toString() + "  " +tracker.typeIdString + "  " + tracker.carrierId + "    " + tracker.travelTime.toString() + "   " + tracker.travelDistance.toString() + "   " + tracker.cost.toString());
                 out.newLine();
             }
             out.close();
@@ -116,5 +106,10 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
         }
         catch (IOException e) {
         }
+    }
+
+    @Override
+    public void handleEvent(PersonEntersVehicleEvent event) {
+        freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId());
     }
 }

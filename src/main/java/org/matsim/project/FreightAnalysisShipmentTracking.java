@@ -9,14 +9,8 @@ import java.util.HashMap;
 
 public class FreightAnalysisShipmentTracking {
     HashMap<Id<CarrierShipment>, CarrierShipmentTracker> shipments = new HashMap();
-    public void addTracker(CarrierShipment shipment){
+    public void addTracker(CarrierShipment shipment, Id<Person> driverId){
         shipments.put(shipment.getId(),new CarrierShipmentTracker(shipment) );
-    }
-    public void addTracker(CarrierShipment shipment, Id<Carrier> carrierId){
-       shipments.put(shipment.getId(),new CarrierShipmentTracker(shipment,carrierId)); 
-    }
-    public void addTracker(CarrierShipment shipment, Id<Carrier> carrierId, Id<Person> driverId) {
-        shipments.put(shipment.getId(), new CarrierShipmentTracker(shipment,carrierId,driverId));
     }
 
     public void trackEvent(ShipmentDeliveredEvent event) {

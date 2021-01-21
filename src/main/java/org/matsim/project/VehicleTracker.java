@@ -1,6 +1,7 @@
 package org.matsim.project;
 
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.population.Person;
 import org.matsim.contrib.freight.carrier.Carrier;
 import org.matsim.vehicles.VehicleType;
 
@@ -13,17 +14,12 @@ public class VehicleTracker {
     Double emptyDistance = 0.0;
     String carrierId = "N/A";
     Double cost = 0.0;
+    Id<Person> driverId = null;
     VehicleTracker(String type) {
         this.typeIdString = type;
     }
 
-    public VehicleTracker(VehicleType vehicleType, Id<Carrier> carrierId) {
+    public VehicleTracker(VehicleType vehicleType) {
         this.vehicleType = vehicleType;
-        this.carrierId = carrierId.toString();
-    }
-    public VehicleTracker(VehicleType vehicleType, Id<Carrier> carrierId, Double baseCost) {
-        this.vehicleType = vehicleType;
-        this.carrierId = carrierId.toString();
-        this.cost = baseCost;
     }
  }
