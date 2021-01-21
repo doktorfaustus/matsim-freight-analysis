@@ -1,18 +1,17 @@
 package org.matsim.project;
 
+import com.graphhopper.jsprit.core.problem.job.Shipment;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
 import org.matsim.api.core.v01.network.Network;
-import org.matsim.contrib.freight.carrier.Carrier;
-import org.matsim.contrib.freight.carrier.CarrierVehicleTypes;
-import org.matsim.contrib.freight.carrier.Carriers;
-import org.matsim.contrib.freight.carrier.ScheduledTour;
+import org.matsim.contrib.freight.carrier.*;
 import org.matsim.contrib.freight.events.ShipmentDeliveredEvent;
 //import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
 import org.matsim.contrib.freight.events.ShipmentPickedUpEvent;
 //import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
 import org.matsim.core.controler.events.IterationEndsEvent;
+import org.matsim.utils.objectattributes.attributable.Attributes;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.Vehicles;
 
@@ -41,6 +40,19 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
                 if (vehicle.getId().toString().contains("freight")){
                    freightAnalysisVehicleTracking.addTracker(vehicle.getId(), vehicle.getType() );//CarrierId hier noch nicht bekannt
                 }
+        }
+
+
+        for(Carrier carrier:carriers.getCarriers().values()){
+            for(CarrierShipment shipment: carrier.getShipments().values()){
+                shipmentTracking.addTracker(shipment);
+            };
+            for(CarrierService service: carrier.getServices().values()){
+                service.getId();
+                Attributes attributes = service.getAttributes();
+            }
+            for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
+            }
         }
 
     }
