@@ -26,7 +26,7 @@ public class CarrierShipmentTracker {
     }
     public CarrierShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId){
         this(shipment);
-        this.carrierId =carrierId;
+        this.carrierId=carrierId;
     }
     public CarrierShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId, Id<Person> driverId){
        this(shipment, carrierId);

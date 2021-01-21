@@ -34,18 +34,14 @@ public class RunFreightAnalysis {
 
        Network network = NetworkUtils.readNetwork(networkFile.getAbsolutePath());
 
-       //CarrierVehicleTypes vehicleTypes = new CarrierVehicleTypes();
-       //new CarrierVehicleTypeReader(vehicleTypes).readFile(carrierFile.getAbsolutePath());
-
        Carriers carriers = new Carriers();
-//     Carriers carriers2 = new Carriers();
        new CarrierPlanXmlReader(carriers).readFile(carrierFile.getAbsolutePath());
 
        Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
        new  MatsimVehicleReader(vehicles).readFile(vehiclesFile.getAbsolutePath());
 
        EventsManager eventsManager = EventsUtils.createEventsManager();
-       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles, carriers);
+       FreightAnalysisEventHandler freightEventHandler = new FreightAnalysisEventHandler(network, vehicles, vehicleTypes, carriers);
        eventsManager.addHandler(freightEventHandler);
 
        eventsManager.initProcessing();

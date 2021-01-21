@@ -8,6 +8,7 @@ import org.matsim.api.core.v01.events.handler.LinkEnterEventHandler;
 import org.matsim.api.core.v01.events.handler.LinkLeaveEventHandler;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.freight.carrier.Carrier;
+import org.matsim.contrib.freight.carrier.CarrierVehicleTypes;
 import org.matsim.contrib.freight.carrier.Carriers;
 import org.matsim.contrib.freight.carrier.ScheduledTour;
 import org.matsim.contrib.freight.events.ShipmentDeliveredEvent;
@@ -29,15 +30,16 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
     private final Vehicles vehicles;
     private final Network network;
     private final Carriers carriers;
+    private final CarrierVehicleTypes carrierVehicleTypes;
     HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
     FreightAnalysisVehicleTracking freightAnalysisVehicleTracking = new FreightAnalysisVehicleTracking();
     FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
 
-    public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
+    public FreightAnalysisEventHandler(Network network, Vehicles vehicles, CarrierVehicleTypes vehicleTypes, Carriers carriers) {
         this.network=network;
         this.vehicles=vehicles;
         this.carriers=carriers;
-
+        this.carrierVehicleTypes=vehicleTypes;
 
 
         for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
@@ -45,7 +47,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
                 ScheduledTour tour = (ScheduledTour) it.next();
                 Id<Vehicle> tourVehId=tour.getVehicle().getId();
                 if (vehicles.getVehicles().containsKey(tourVehId)) {
-                    freightAnalysisVehicleTracking.addTracker(tourVehId, vehicles.getVehicles().get(tourVehId).getType().getId().toString(), carrier.getId());
+                    freightAnalysisVehicleTracking.addTracker(tourVehId, vehicles.getVehicles().get(tourVehId).getType(), carrier.getId());
                 }
             }
         }
@@ -81,11 +83,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
         }
     }
 
-    public FreightAnalysisEventHandler(Vehicles vehicles, Network network, Carriers carriers) {
-        this.vehicles = vehicles;
-        this.network = network;
-        this.carriers = carriers;
-    }
+
 
     @Override
     public void handleEvent(ShipmentDeliveredEvent event) {
@@ -110,7 +108,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
                 VehicleTracker tracker = trackers.get(vehId);
                 Double emptyTimeShare = (tracker.emptyTime / tracker.travelTime);
                 Double emptyDistanceShare = (tracker.emptyDistance / tracker.travelDistance);
-                out.write(vehId.toString() + tracker.typeIdString + "  " + tracker.carrierId + "    " + tracker.travelTime.toString() + "   " + tracker.travelDistance.toString() + "   " + emptyTimeShare.toString() + "   " + emptyDistanceShare.toString());
+                out.write(vehId.toString() + tracker.typeIdString + "  " + tracker.carrierId + "    " + tracker.travelTime.toString() + "   " + tracker.travelDistance.toString() + "   " + tracker.cost.toString());
                 out.newLine();
             }
             out.close();
