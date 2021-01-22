@@ -8,7 +8,6 @@ import org.matsim.contrib.freight.carrier.*;
 //import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
 //import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
 import org.matsim.core.controler.events.IterationEndsEvent;
-import org.matsim.utils.objectattributes.attributable.Attributes;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.VehicleType;
 import org.matsim.vehicles.Vehicles;
@@ -57,14 +56,17 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			}
 			for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
 				for(Tour.TourElement tourElement:tour.getTour().getTourElements()){
-					Double expectedArrivalTime;
+					Double calculatedArrivalTime=0.0;
 					if (tourElement instanceof Tour.Leg){
-						expectedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
+						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
 					}
 					if (tourElement instanceof Tour.ServiceActivity){ //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
 						Id<CarrierService> serviceId = ((Tour.ServiceActivity) tourElement).getService().getId();
 						serviceTracking.trackers.get(serviceId).expectedArrival= ((Tour.ServiceActivity) tourElement).getExpectedArrival();
 						serviceTracking.trackers.get(serviceId).linkId=((Tour.ServiceActivity) tourElement).getLocation();
+						if(calculatedArrivalTime>0.0){
+							serviceTracking.trackers.get(serviceId).calculatedArrival=calculatedArrivalTime; //in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
+						}
 					}
 				}
 			}

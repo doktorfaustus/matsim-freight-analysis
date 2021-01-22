@@ -7,6 +7,7 @@ import org.matsim.contrib.freight.carrier.CarrierService;
 public class ServiceTracker {
 	public double expectedArrival;
 	public Id<Link> linkId;
+	public Double calculatedArrival;
 	Double scheduledStartTime;
 Boolean onTimeArrival;
 Boolean onTimeDelivery;
