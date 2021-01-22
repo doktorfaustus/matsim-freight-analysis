@@ -1,25 +1,22 @@
 package org.matsim.project;
 
-import com.graphhopper.jsprit.core.problem.job.Shipment;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.freight.carrier.*;
-import org.matsim.contrib.freight.events.ShipmentDeliveredEvent;
 //import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
-import org.matsim.contrib.freight.events.ShipmentPickedUpEvent;
 //import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
 import org.matsim.core.controler.events.IterationEndsEvent;
 import org.matsim.utils.objectattributes.attributable.Attributes;
 import org.matsim.vehicles.Vehicle;
+import org.matsim.vehicles.VehicleType;
 import org.matsim.vehicles.Vehicles;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler{
 
@@ -70,12 +67,16 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 	@Override
 	public void handleEvent(ActivityEndEvent activityEndEvent) {
-
 	}
 
 	@Override
 	public void handleEvent(ActivityStartEvent activityStartEvent) {
+		if(activityStartEvent.getActType().equals("end")){
+			VehicleTracker vehicleUnit = freightAnalysisVehicleTracking.trackers.get(freightAnalysisVehicleTracking.driver2VehicleId.get(activityStartEvent.getPersonId()));
+			vehicleUnit.serviceTime+= activityStartEvent.getTime()-vehicleUnit.serviceStartTime;
+		}
 	}
+
 
 	@Override
 	public void handleEvent(LinkEnterEvent linkEnterEvent) {
@@ -109,12 +110,12 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 //
 //    }
 //
-	public void export(){
+	public void exportVehicleInfo(){
 		try {
-			BufferedWriter out = new BufferedWriter(new FileWriter("vehicleStatsExport.tsv"));
+			BufferedWriter out = new BufferedWriter(new FileWriter("output/freightVehicleStats.tsv"));
 			out.write("VehicleId	VehicleType	CarrierId	DriverID	travelTime	travelDistance	cost");
 			out.newLine();
-			HashMap<Id, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
+			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
 			for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
 				VehicleTracker tracker = trackers.get(vehId);
 				out.write(vehId.toString() + "	" + tracker.toTSV());
@@ -125,6 +126,39 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		}
 		catch (IOException e) {
 			return; // TODO
+		}
+	}
+
+	public void exportCarrierInfo(){
+		for(Carrier carrier:carriers.getCarriers().values()){
+			HashMap<VehicleType,CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
+			try {
+				BufferedWriter out = new BufferedWriter(new FileWriter("output/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
+				for(VehicleTracker tracker : freightAnalysisVehicleTracking.getTrackers().values()) {
+					if (tracker.carrierId.equals(carrier.getId())) {
+						if (!vehicleTypeStatsMap.containsKey(tracker.vehicleType)) {
+							vehicleTypeStatsMap.put(tracker.vehicleType, new CarrierVehicleTypeStats());
+						}
+						CarrierVehicleTypeStats cVtStTr = vehicleTypeStatsMap.get(tracker.vehicleType);
+						cVtStTr.vehicleCount++;
+						cVtStTr.totalCost += tracker.cost;
+						cVtStTr.totalDistance += tracker.travelDistance;
+						cVtStTr.totalRoadTime += tracker.travelTime;
+						cVtStTr.totalServiceTime += tracker.serviceTime;
+					}
+				}
+
+				out.write("vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
+				out.newLine();
+				for(VehicleType vt:vehicleTypeStatsMap.keySet()){
+					CarrierVehicleTypeStats vts = vehicleTypeStatsMap.get(vt);
+					out.write(vt.getId().toString() + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime+ "	" + vts.totalRoadTime+ "	" + vts.totalCost);
+					out.newLine();
+				}
+				out.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 

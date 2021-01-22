@@ -75,7 +75,7 @@
 		<param name="distanceFilterCenterNode" value="null" />
 		<!-- If true, link counts from legs performed on modes not included in the 'analyzedModes' parameter are ignored. -->
 		<param name="filterModes" value="false" />
-		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at export. If not specified, no conversion happens. -->
+		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at exportVehicleInfo. If not specified, no conversion happens. -->
 		<param name="inputCRS" value="null" />
 		<!-- input file name to counts package -->
 		<param name="inputCountsFile" value="null" />
@@ -89,7 +89,7 @@
 		<param name="facilitiesSource" value="none" />
 		<!-- A prefix to be used for auto-generated IDs. -->
 		<param name="idPrefix" value="f_auto_" />
-		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at export. If not specified, no conversion happens. -->
+		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at exportVehicleInfo. If not specified, no conversion happens. -->
 		<param name="inputCRS" value="null" />
 		<param name="inputFacilitiesFile" value="null" />
 		<param name="inputFacilityAttributesFile" value="null" />
@@ -119,7 +119,7 @@
 		<param name="writeLinkStatsInterval" value="10" />
 	</module>
 	<module name="network" >
-		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at export. If not specified, no conversion happens. -->
+		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at exportVehicleInfo. If not specified, no conversion happens. -->
 		<param name="inputCRS" value="null" />
 		<param name="inputChangeEventsFile" value="null" />
 		<param name="inputNetworkFile" value="grid9x9.xml" />
@@ -214,7 +214,7 @@
 		<param name="activityDurationInterpretation" value="tryEndTimeThenDuration" />
 		<!-- Possible values: reject, useMainModeIdentifier -->
 		<param name="handlingOfPlansWithoutRoutingMode" value="reject" />
-		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at export. If not specified, no conversion happens. -->
+		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at exportVehicleInfo. If not specified, no conversion happens. -->
 		<param name="inputCRS" value="null" />
 		<param name="inputPersonAttributesFile" value="null" />
 		<param name="inputPlansFile" value="passengerPlans.xml" />
@@ -383,7 +383,7 @@
 		<param name="modes" value="car,pt,bike,walk" />
 	</module>
 	<module name="transit" >
-		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at export. If not specified, no conversion happens. -->
+		<!-- The Coordinates Reference System in which the coordinates are expressed in the input file. At import, the coordinates will be converted to the coordinate system defined in "global", and willbe converted back at exportVehicleInfo. If not specified, no conversion happens. -->
 		<param name="inputScheduleCRS" value="null" />
 		<param name="insistingOnUsingDeprecatedAttributeFiles" value="false" />
 		<!-- Optional input file containing additional attributes for transit lines, stored as ObjectAttributes. -->

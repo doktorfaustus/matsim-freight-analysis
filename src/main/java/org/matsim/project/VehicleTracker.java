@@ -9,12 +9,14 @@ public class VehicleTracker {
 	String typeIdString = "N/A";
 	VehicleType vehicleType;
 	Double travelTime = 0.0;
+	Double serviceTime = 0.0;
 	Double travelDistance = 0.0;
 	Double emptyTime = 0.0;
 	Double emptyDistance = 0.0;
 	Id<Carrier> carrierId;
 	Double cost = 0.0;
 	Id<Person> driverId = null;
+	Double serviceStartTime = 0.0;
 
 	VehicleTracker(String type) {
 		this.typeIdString = type;

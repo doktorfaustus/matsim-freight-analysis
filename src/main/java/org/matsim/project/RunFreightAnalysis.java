@@ -1,16 +1,11 @@
 package org.matsim.project;
 
-import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.freight.carrier.*;
 import org.matsim.core.api.experimental.events.EventsManager;
-import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.events.EventsUtils;
 import org.matsim.core.events.MatsimEventsReader;
-import org.matsim.core.events.handler.EventHandler;
 import org.matsim.core.network.NetworkUtils;
-import org.matsim.core.network.io.MatsimNetworkReader;
-import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.vehicles.*;
 
 import java.io.File;
@@ -49,6 +44,7 @@ public class RunFreightAnalysis {
        MatsimEventsReader eventsReader = new MatsimEventsReader(eventsManager);
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
-       freightEventHandler.export();
+       freightEventHandler.exportVehicleInfo();
+       freightEventHandler.exportCarrierInfo();
     }
 }

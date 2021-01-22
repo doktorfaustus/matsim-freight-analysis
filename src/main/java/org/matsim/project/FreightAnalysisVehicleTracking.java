@@ -10,6 +10,7 @@ import java.util.HashMap;
 
 public class FreightAnalysisVehicleTracking {
     HashMap<Id<Vehicle>, VehicleTracker> trackers = new HashMap<>();
+    HashMap<Id<Person>, Id<Vehicle>> driver2VehicleId = new HashMap<>();
 
     public void addTracker(Id<Vehicle> vehicleId, VehicleType vehicleType) {
         trackers.putIfAbsent(vehicleId, new VehicleTracker(vehicleType));
@@ -35,13 +36,14 @@ public class FreightAnalysisVehicleTracking {
         }
     }
 
-    public HashMap getTrackers() {
+    public HashMap<Id<Vehicle>, VehicleTracker> getTrackers() {
         return trackers;
     }
 
     public void addDriver2Vehicle(Id<Person> personId, Id<Vehicle> vehicleId) {
         if (trackers.containsKey(vehicleId)) {
             trackers.get(vehicleId).driverId = personId;
+            driver2VehicleId.put(personId,vehicleId);
         }
     }
 
