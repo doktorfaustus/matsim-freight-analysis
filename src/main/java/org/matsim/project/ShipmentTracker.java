@@ -1,6 +1,5 @@
 package org.matsim.project;
 
-import com.graphhopper.jsprit.core.problem.job.Shipment;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.Event;
 import org.matsim.api.core.v01.population.Person;
@@ -10,7 +9,7 @@ import org.matsim.core.utils.misc.Time;
 
 import java.util.LinkedList;
 
-public class CarrierShipmentTracker {
+public class ShipmentTracker {
     private Id<Person> driverId = null;
     private CarrierShipment shipment;
     private Id<CarrierShipment> id;
@@ -21,14 +20,14 @@ public class CarrierShipmentTracker {
     private Boolean isOnTimeDelivery;
     LinkedList<Event> events = new LinkedList<>();
 
-    public CarrierShipmentTracker(CarrierShipment shipment){
+    public ShipmentTracker(CarrierShipment shipment){
         this.id=shipment.getId();
     }
-    public CarrierShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId){
+    public ShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId){
         this(shipment);
         this.carrierId=carrierId;
     }
-    public CarrierShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId, Id<Person> driverId){
+    public ShipmentTracker(CarrierShipment shipment, Id<Carrier> carrierId, Id<Person> driverId){
        this(shipment, carrierId);
        this.driverId = driverId;
 

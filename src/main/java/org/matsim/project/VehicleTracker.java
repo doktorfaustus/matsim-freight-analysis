@@ -27,6 +27,6 @@ public class VehicleTracker {
 	}
 
 	public String toTSV() {
-		return (this.vehicleType.getId().toString() + "	" + this.carrierId.toString() + "	" + this.driverId.toString() + "	" + this.travelTime.toString() + "	" + this.travelDistance.toString() + "	" + this.cost.toString());
+		return (this.vehicleType.getId().toString() + "	" + this.carrierId.toString() + "	" + this.driverId.toString() + "	" + this.serviceTime.toString() + "	" + this.travelTime.toString() + "	" + this.travelDistance.toString() + "	" + this.cost.toString());
 	}
 }

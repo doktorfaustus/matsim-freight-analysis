@@ -29,10 +29,10 @@ public class FreightAnalysisVehicleTracking {
                         + tracker.travelTime * tracker.vehicleType.getCostInformation().getCostsPerSecond();
         if (isEmpty) {
             tracker.emptyDistance = tracker.emptyDistance + travelDistance;
-            tracker.emptyTime = tracker.emptyTime + travelTime;
+            tracker.emptyTime = tracker.emptyTime + (-travelTime);
         } else {
             tracker.travelDistance = tracker.travelDistance + travelDistance;
-            tracker.travelTime = tracker.travelTime + travelTime;
+            tracker.travelTime = tracker.travelTime + (-travelTime);
         }
     }
 

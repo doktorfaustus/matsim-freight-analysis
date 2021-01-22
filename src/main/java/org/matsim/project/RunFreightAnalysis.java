@@ -44,7 +44,8 @@ public class RunFreightAnalysis {
        MatsimEventsReader eventsReader = new MatsimEventsReader(eventsManager);
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
-       freightEventHandler.exportVehicleInfo();
-       freightEventHandler.exportCarrierInfo();
+       freightEventHandler.exportVehicleInfo("freightOutput");
+       freightEventHandler.exportCarrierInfo("freightOutput");
+       freightEventHandler.exportServiceInfo("freightOutput");
     }
 }
