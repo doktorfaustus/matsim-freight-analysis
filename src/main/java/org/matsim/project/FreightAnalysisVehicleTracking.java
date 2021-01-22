@@ -44,4 +44,10 @@ public class FreightAnalysisVehicleTracking {
             trackers.get(vehicleId).driverId = personId;
         }
     }
+
+    public void addCarrier2Vehicle(Id<Vehicle> vehicleId, Id<Carrier> carrierId) {
+        if (trackers.containsKey(vehicleId)){
+            trackers.get(vehicleId).carrierId = carrierId;
+        }
+    }
 }

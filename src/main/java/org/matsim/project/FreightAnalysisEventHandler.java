@@ -23,73 +23,80 @@ import java.util.Iterator;
 
 public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler{
 
-    private final Vehicles vehicles;
-    private final Network network;
-    private final Carriers carriers;
-    HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
-    FreightAnalysisVehicleTracking freightAnalysisVehicleTracking = new FreightAnalysisVehicleTracking();
-    FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
+	private Vehicles vehicles = null;
+	private Network network = null;
+	private Carriers carriers = null;
+	HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
+	FreightAnalysisVehicleTracking freightAnalysisVehicleTracking = new FreightAnalysisVehicleTracking();
+	FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
 
-    public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
-        this.network=network;
-        this.vehicles=vehicles;
-        this.carriers=carriers;
+	public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
+		this.network=network;
+		this.vehicles=vehicles;
+		this.carriers=carriers;
 
-        //for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
-        for(Vehicle vehicle:vehicles.getVehicles().values()){
-                if (vehicle.getId().toString().contains("freight")){
-                   freightAnalysisVehicleTracking.addTracker(vehicle.getId(), vehicle.getType() );//CarrierId hier noch nicht bekannt
-                }
-        }
-
-
-        for(Carrier carrier:carriers.getCarriers().values()){
-            for(CarrierShipment shipment: carrier.getShipments().values()){
-                shipmentTracking.addTracker(shipment);
-            };
-            for(CarrierService service: carrier.getServices().values()){
-                service.getId();
-                Attributes attributes = service.getAttributes();
-            }
-            for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
-            }
-        }
-
-    }
-
-    public void handleEvent(IterationEndsEvent e){
-        System.out.println("GuNa!");
-    }
-
-    @Override
-    public void handleEvent(ActivityEndEvent activityEndEvent) {
-
-    }
-
-    @Override
-    public void handleEvent(ActivityStartEvent activityStartEvent) {
-    }
-
-    @Override
-    public void handleEvent(LinkEnterEvent linkEnterEvent) {
-        vehiclesOnLink.put(linkEnterEvent.getVehicleId(),linkEnterEvent.getTime());
-    }
-
-    @Override
-    public void handleEvent(LinkLeaveEvent linkLeaveEvent) {
-        if (vehiclesOnLink.containsKey(linkLeaveEvent.getVehicleId())) {
-            Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
-            Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
-
-            if (vehicles.getVehicles().get(linkLeaveEvent.getVehicleId()).getType().getCapacity().getOther() > 0) {
-                freightAnalysisVehicleTracking.addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, linkLength, false);
-            }
-        }
-    }
+		//for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
+		for(Vehicle vehicle:vehicles.getVehicles().values()){
+			if (vehicle.getId().toString().contains("freight")){
+				freightAnalysisVehicleTracking.addTracker(vehicle.getId(), vehicle.getType() );//CarrierId hier noch nicht bekannt
+			}
+		}
 
 
+		for(Carrier carrier:carriers.getCarriers().values()){
+			for (Vehicle vehicle:vehicles.getVehicles().values()){
+				if (vehicle.getId().toString().contains("veh_carrier_"+carrier.getId())){
+					freightAnalysisVehicleTracking.addCarrier2Vehicle(vehicle.getId(),carrier.getId());
+				}
+			}
 
-//    @Override
+
+			for(CarrierShipment shipment: carrier.getShipments().values()){
+				shipmentTracking.addTracker(shipment);
+			};
+			for(CarrierService service: carrier.getServices().values()){
+				service.getId();
+				Attributes attributes = service.getAttributes();
+			}
+			for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
+			}
+		}
+
+	}
+
+	public void handleEvent(IterationEndsEvent e){
+		System.out.println("GuNa!");
+	}
+
+	@Override
+	public void handleEvent(ActivityEndEvent activityEndEvent) {
+
+	}
+
+	@Override
+	public void handleEvent(ActivityStartEvent activityStartEvent) {
+	}
+
+	@Override
+	public void handleEvent(LinkEnterEvent linkEnterEvent) {
+		vehiclesOnLink.put(linkEnterEvent.getVehicleId(),linkEnterEvent.getTime());
+	}
+
+	@Override
+	public void handleEvent(LinkLeaveEvent linkLeaveEvent) {
+		if (vehiclesOnLink.containsKey(linkLeaveEvent.getVehicleId())) {
+			Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
+			Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
+
+			if (vehicles.getVehicles().get(linkLeaveEvent.getVehicleId()).getType().getCapacity().getOther() > 0) {
+				freightAnalysisVehicleTracking.addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, linkLength, false);
+			}
+		}
+	}
+
+
+
+	//    @Override
 //    public void handleEvent(ShipmentDeliveredEvent event) {
 //        if (!shipmentTracking.shipments.containsKey(event.getShipment().getId())){
 //            shipmentTracking.addTracker(event.getShipment(), event.getDriverId() );
@@ -102,26 +109,27 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 //
 //    }
 //
-    public void export(){
-        try {
-            BufferedWriter out = new BufferedWriter(new FileWriter("vehicleStatsExport.tsv"));
-            out.write("VehicleType  CarrierId  travelTime  travelDistance  cost");
-            out.newLine();
-            HashMap<Id, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
-            for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
-                VehicleTracker tracker = trackers.get(vehId);
-                out.write(vehId.toString() + "  " +tracker.typeIdString + "  " + tracker.carrierId + "    " + tracker.travelTime.toString() + "   " + tracker.travelDistance.toString() + "   " + tracker.cost.toString());
-                out.newLine();
-            }
-            out.close();
-            System.out.println("File created successfully");
-        }
-        catch (IOException e) {
-        }
-    }
+	public void export(){
+		try {
+			BufferedWriter out = new BufferedWriter(new FileWriter("vehicleStatsExport.tsv"));
+			out.write("VehicleId	VehicleType	CarrierId	DriverID	travelTime	travelDistance	cost");
+			out.newLine();
+			HashMap<Id, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
+			for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
+				VehicleTracker tracker = trackers.get(vehId);
+				out.write(vehId.toString() + "	" + tracker.toTSV());
+				out.newLine();
+			}
+			out.close();
+			System.out.println("File created successfully");
+		}
+		catch (IOException e) {
+			return; // TODO
+		}
+	}
 
-    @Override
-    public void handleEvent(PersonEntersVehicleEvent event) {
-        freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId());
-    }
+	@Override
+	public void handleEvent(PersonEntersVehicleEvent event) {
+		freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId());
+	}
 }
