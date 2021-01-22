@@ -26,6 +26,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap();
 	FreightAnalysisVehicleTracking freightAnalysisVehicleTracking = new FreightAnalysisVehicleTracking();
 	FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
+	FreightAnalysisServiceTracking serviceTracking = new FreightAnalysisServiceTracking();
 
 	public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
 		this.network=network;
@@ -52,10 +53,20 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 				shipmentTracking.addTracker(shipment);
 			};
 			for(CarrierService service: carrier.getServices().values()){
-				service.getId();
-				Attributes attributes = service.getAttributes();
+				serviceTracking.addTracker(service);
 			}
 			for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
+				for(Tour.TourElement tourElement:tour.getTour().getTourElements()){
+					Double expectedArrivalTime;
+					if (tourElement instanceof Tour.Leg){
+						expectedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
+					}
+					if (tourElement instanceof Tour.ServiceActivity){ //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
+						Id<CarrierService> serviceId = ((Tour.ServiceActivity) tourElement).getService().getId();
+						serviceTracking.trackers.get(serviceId).expectedArrival= ((Tour.ServiceActivity) tourElement).getExpectedArrival();
+						serviceTracking.trackers.get(serviceId).linkId=((Tour.ServiceActivity) tourElement).getLocation();
+					}
+				}
 			}
 		}
 
@@ -75,6 +86,13 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			VehicleTracker vehicleUnit = freightAnalysisVehicleTracking.trackers.get(freightAnalysisVehicleTracking.driver2VehicleId.get(activityStartEvent.getPersonId()));
 			vehicleUnit.serviceTime+= activityStartEvent.getTime()-vehicleUnit.serviceStartTime;
 		}
+
+		if(activityStartEvent.getActType().equals("service")){
+			activityStartEvent.getPersonId();
+			activityStartEvent.getLinkId();
+			activityStartEvent.getTime();
+		}
+
 	}
 
 
