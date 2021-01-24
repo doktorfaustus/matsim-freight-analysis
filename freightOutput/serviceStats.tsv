@@ -1,4 +1,4 @@
-carrierID	serviceId	driverId	vehicleType	ServiceETA	TourETA ArrivalTime
+carrierID	serviceId	currentDriverId	vehicleType	ServiceETA	TourETA ArrivalTime
 -1	44	-1	0.0	33338.0	null
 -1	45	-1	0.0	53148.0	null
 -1	46	-1	0.0	52415.0	null

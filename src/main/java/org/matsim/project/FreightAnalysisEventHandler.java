@@ -1,5 +1,5 @@
 package org.matsim.project;
-
+import org.apache.logging.log4j.message.Message;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
@@ -16,9 +16,12 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+import org.apache.log4j.Logger;
 
-public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler{
-
+public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler{
+	private final static Logger log = Logger.getLogger(FreightAnalysisEventHandler.class);
 	private Vehicles vehicles = null;
 	private Network network = null;
 	private Carriers carriers = null;
@@ -35,9 +38,11 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		//for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
 		for(Vehicle vehicle:vehicles.getVehicles().values()){
 			if (vehicle.getId().toString().contains("freight")){
-				freightAnalysisVehicleTracking.addTracker(vehicle.getId(), vehicle.getType() );//CarrierId hier noch nicht bekannt
-			}
+				freightAnalysisVehicleTracking.addTracker(vehicle);//CarrierId hier noch nicht bekannt
+				log.info("started tracking vehicle #"+vehicle.getId().toString());
+			};
 		}
+
 
 
 		for(Carrier carrier:carriers.getCarriers().values()){
@@ -72,7 +77,6 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 				}
 			}
 		}
-
 	}
 
 	public void handleEvent(IterationEndsEvent e){
@@ -81,15 +85,18 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 	@Override
 	public void handleEvent(ActivityEndEvent activityEndEvent) {
+		if(activityEndEvent.getActType().equals("start")){
+
+		}
 	}
 
 	@Override
 	public void handleEvent(ActivityStartEvent activityStartEvent) {
 		if(activityStartEvent.getActType().equals("end")){
-			VehicleTracker vehicleUnit = freightAnalysisVehicleTracking.trackers.get(freightAnalysisVehicleTracking.driver2VehicleId.get(activityStartEvent.getPersonId()));
+			freightAnalysisVehicleTracking.addServiceEnd(activityStartEvent.getPersonId());
+			VehicleTracker vehicleUnit = freightAnalysisVehicleTracking.getTrackers().get(freightAnalysisVehicleTracking.getDriver2VehicleId(activityStartEvent.getPersonId()));
 			vehicleUnit.serviceTime+= activityStartEvent.getTime()-vehicleUnit.serviceStartTime;
 		}
-
 		if(activityStartEvent.getActType().equals("service")){
 			activityStartEvent.getPersonId();
 			activityStartEvent.getLinkId();
@@ -116,6 +123,11 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		}
 	}
 
+	@Override
+	public void handleEvent(PersonEntersVehicleEvent event) {
+			freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId(), event.getTime());
+	}
+
 
 
 	//    @Override
@@ -134,7 +146,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	public void exportVehicleInfo(String path){
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleStats.tsv"));
-			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	cost");
+			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	vehicleCost");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
 			for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
@@ -186,7 +198,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	public void exportServiceInfo(String path){
 		try{
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
-			out.write("carrierID	serviceId	driverId	vehicleType	ServiceETA	TourETA ArrivalTime");
+			out.write("carrierID	serviceId	currentDriverId	vehicleType	ServiceETA	TourETA ArrivalTime");
 			out.newLine();
 		for(ServiceTracker serviceTracker:serviceTracking.trackers.values()){
 			out.write(serviceTracker.carrierId.toString() + "	" + serviceTracker.serviceId.toString() + "	" + serviceTracker.driverId.toString() + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
@@ -199,7 +211,36 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	}
 
 	@Override
-	public void handleEvent(PersonEntersVehicleEvent event) {
-		freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId());
+	public void handleEvent(PersonLeavesVehicleEvent event) {
+		freightAnalysisVehicleTracking.registerVehicleLeave(event);
 	}
+
+/*
+// for as long as the connection tour->vehicle/agent cannot be made with services, one tour=one vehicle could be assumed. Result would be the regular vehicleStatsExport, but filtered by Carrier, which can be done without much effort anyways.
+	public void exportCarrierTourStats(String path){
+		HashMap<Id<Carrier>, Set<VehicleTracker>> carrierVehicles = new HashMap<>();
+		for (VehicleTracker vt:freightAnalysisVehicleTracking.getTrackers().values()) {
+			if (vt.carrierId != null) {
+				if (!carrierVehicles.containsKey(vt.carrierId)) {
+					carrierVehicles.put(vt.carrierId, new HashSet<>());
+				}
+				carrierVehicles.get(vt.carrierId).add(vt);
+			}
+		}
+
+		try {
+			for(Id<Carrier> carrierId:carrierVehicles.keySet()){
+				BufferedWriter out = new BufferedWriter(new FileWriter(path+"/tourStats_carrier_" + carrierId.toString() + ".tsv"));
+				for(VehicleTracker vt:carrierVehicles.get(carrierId)){
+
+				}
+				out.write();
+				out.close();
+			}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+	}
+*/
 }
