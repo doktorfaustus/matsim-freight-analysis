@@ -11,10 +11,10 @@
 
     <properties>
         <!--release:-->
-        <!--		<matsim.version>12.0</matsim.version> -->
+        <matsim.version>12.0</matsim.version>
 
         <!--weekly "release" (recommended):-->
-        <matsim.version>13.0-2021w02-SNAPSHOT</matsim.version>
+        <!--matsim.version>13.0-2021w01-SNAPSHOT</matsim.version-->
 
         <!--		I think we should leave this at a weekly build for better stability.  Please pull up every time you see this.  kai, dec'20 -->
 

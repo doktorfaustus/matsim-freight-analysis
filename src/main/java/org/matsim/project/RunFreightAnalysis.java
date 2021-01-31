@@ -14,19 +14,21 @@ public class RunFreightAnalysis {
     public static void main(String[] args) {
         // benoetigte Dateien:
         RunFreightAnalysis rfa = new RunFreightAnalysis();
-        rfa.runAnalysis();
+//        String basePath = "output100";
+        String basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
+        rfa.runAnalysis(basePath);
     }
 
     public RunFreightAnalysis() {
     }
 
-    private void runAnalysis(){//Dateipfade uebergeben lassen
-       File networkFile = new File("output100/output_network.xml.gz");
-       File carrierFile = new File("output100/output_carriers.xml");
-       //File carrierFile = new File("output100/carrierReadtest.xml");
-       File vehicleTypeFile = new File("output100/output_VehicleTypes.xml.gz");
-       File vehiclesFile = new File("output100/output_allVehicles.xml.gz");
-       File eventsFile = new File("output100/output_events.xml.gz");
+    private void runAnalysis(String basePath){//Dateipfade uebergeben lassen
+       File networkFile = new File(basePath + "/output_network.xml.gz");
+       File carrierFile = new File(basePath + "/output_carriers.xml");
+       //File carrierFile = new File(basePath + "/carrierReadtest.xml");
+       File vehicleTypeFile = new File(basePath + "/output_VehicleTypes.xml.gz");
+       File vehiclesFile = new File(basePath + "/output_allVehicles.xml.gz");
+       File eventsFile = new File(basePath + "/output_events.xml.gz");
 
        Network network = NetworkUtils.readNetwork(networkFile.getAbsolutePath());
 
