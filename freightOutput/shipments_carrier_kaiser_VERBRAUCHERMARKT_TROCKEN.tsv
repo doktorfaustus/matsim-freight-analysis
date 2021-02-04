@@ -1,0 +1,5 @@
+carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDurationkaiser_VERBRAUCHERMARKT_TROCKEN	127_kaiser	?-1	-1	false	false	0.0	0.0	0.011764.693293283162
+kaiser_VERBRAUCHERMARKT_TROCKEN	128_kaiser	?-1	-1	false	false	0.0	0.0	0.010676.399413297522
+kaiser_VERBRAUCHERMARKT_TROCKEN	131_kaiser	?-1	-1	false	false	0.0	0.0	0.011921.874101792348
+kaiser_VERBRAUCHERMARKT_TROCKEN	132_kaiser	?-1	-1	false	false	0.0	0.0	0.012183.207667426384
+kaiser_VERBRAUCHERMARKT_TROCKEN	134_kaiser	?-1	-1	false	false	0.0	0.0	0.013452.620817501169

@@ -47,7 +47,9 @@ public class RunFreightAnalysis {
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
        freightEventHandler.exportVehicleInfo("freightOutput");
+       freightEventHandler.exportVehicleTripInfo("freightOutput");
        freightEventHandler.exportCarrierInfo("freightOutput");
        freightEventHandler.exportServiceInfo("freightOutput");
+       freightEventHandler.exportShipmentInfo("freightOutput");
     }
 }
