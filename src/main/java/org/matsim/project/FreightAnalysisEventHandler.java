@@ -1,4 +1,5 @@
 package org.matsim.project;
+
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
@@ -21,6 +22,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
+
 import org.apache.log4j.Logger;
 
 public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler {
@@ -34,78 +36,78 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	FreightAnalysisServiceTracking serviceTracking = new FreightAnalysisServiceTracking();
 
 	public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
-		this.network=network;
-		this.vehicles=vehicles;
-		this.carriers=carriers;
+		this.network = network;
+		this.vehicles = vehicles;
+		this.carriers = carriers;
 
 		//for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
-		for(Vehicle vehicle:vehicles.getVehicles().values()){
-			if (vehicle.getId().toString().contains("freight")){
+		for (Vehicle vehicle : vehicles.getVehicles().values()) {
+			if (vehicle.getId().toString().contains("freight")) {
 				freightAnalysisVehicleTracking.addTracker(vehicle);//CarrierId hier noch nicht bekannt
-				log.info("started tracking vehicle #"+vehicle.getId().toString());
+				log.info("started tracking vehicle #" + vehicle.getId().toString());
 			}
 		}
 
 
-
-		for(Carrier carrier:carriers.getCarriers().values()){
-			for (Vehicle vehicle:vehicles.getVehicles().values()){
-				if (vehicle.getId().toString().contains("veh_carrier_"+carrier.getId())){
-					freightAnalysisVehicleTracking.addCarrier2Vehicle(vehicle.getId(),carrier.getId()); // funktioniert nicht, weil Ids nicht stimmen.
+		for (Carrier carrier : carriers.getCarriers().values()) {
+			for (Vehicle vehicle : vehicles.getVehicles().values()) {
+				if (vehicle.getId().toString().contains("veh_carrier_" + carrier.getId())) {
+					freightAnalysisVehicleTracking.addCarrier2Vehicle(vehicle.getId(), carrier.getId()); // funktioniert nicht, weil Ids nicht stimmen.
 				}
 			}
-			for(CarrierShipment shipment: carrier.getShipments().values()){
+			for (CarrierShipment shipment : carrier.getShipments().values()) {
 				shipmentTracking.addTracker(shipment);
 			}
 
-			for(CarrierService service: carrier.getServices().values()){
+			for (CarrierService service : carrier.getServices().values()) {
 				serviceTracking.addTracker(service);
 			}
-			for (ScheduledTour tour:carrier.getSelectedPlan().getScheduledTours()){
-				Double calculatedArrivalTime=0.0;
-				for(Tour.TourElement tourElement:tour.getTour().getTourElements()){
-					if (tourElement instanceof Tour.Leg){
+			for (ScheduledTour tour : carrier.getSelectedPlan().getScheduledTours()) {
+				Double calculatedArrivalTime = 0.0;
+				for (Tour.TourElement tourElement : tour.getTour().getTourElements()) {
+					if (tourElement instanceof Tour.Leg) {
 						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
 					}
-					if (tourElement instanceof Tour.ServiceActivity){ //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
+					if (tourElement instanceof Tour.ServiceActivity) { //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
 						Id<CarrierService> serviceId = ((Tour.ServiceActivity) tourElement).getService().getId();
-						serviceTracking.trackers.get(serviceId).expectedArrival= ((Tour.ServiceActivity) tourElement).getExpectedArrival();
-						serviceTracking.trackers.get(serviceId).linkId=((Tour.ServiceActivity) tourElement).getLocation();
-						if(calculatedArrivalTime>0.0){
-							serviceTracking.trackers.get(serviceId).calculatedArrival=calculatedArrivalTime; //in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
-							calculatedArrivalTime=0.0;
+						serviceTracking.trackers.get(serviceId).expectedArrival = ((Tour.ServiceActivity) tourElement).getExpectedArrival();
+						serviceTracking.trackers.get(serviceId).linkId = ((Tour.ServiceActivity) tourElement).getLocation();
+						if (calculatedArrivalTime > 0.0) {
+							serviceTracking.trackers.get(serviceId).calculatedArrival = calculatedArrivalTime; //in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
+							calculatedArrivalTime = 0.0;
 						}
 					}
 				}
 			}
 		}
 	}
+
 	@Override
 	public void handleEvent(ActivityEndEvent activityEndEvent) {
-		if(activityEndEvent.getActType().equals("start")){
+		if (activityEndEvent.getActType().equals("start")) {
 
 		}
 	}
 
 	@Override
 	public void handleEvent(ActivityStartEvent activityStartEvent) {
-		if(activityStartEvent.getActType().equals("end")){
+		if (activityStartEvent.getActType().equals("end")) {
 			freightAnalysisVehicleTracking.endVehicleUsage(activityStartEvent.getPersonId());
 			VehicleTracker vehicleUnit = freightAnalysisVehicleTracking.getTrackers().get(freightAnalysisVehicleTracking.getDriver2VehicleId(activityStartEvent.getPersonId()));
-			vehicleUnit.serviceTime+= activityStartEvent.getTime()-vehicleUnit.usageStartStime;
+			vehicleUnit.serviceTime += activityStartEvent.getTime() - vehicleUnit.usageStartStime;
 		}
-		if(activityStartEvent.getActType().equals("service")){
+		if (activityStartEvent.getActType().equals("service")) {
 			activityStartEvent.getPersonId();
 			activityStartEvent.getLinkId();
 			activityStartEvent.getTime();
 		}
 
-		if(activityStartEvent.getActType().equals("delivery")){
+		if (activityStartEvent.getActType().equals("delivery")) {
 			activityStartEvent.getPersonId();
 			shipmentTracking.trackDeliveryActivity(activityStartEvent);
 		}
 
-		if(activityStartEvent.getActType().equals("delivery")){
+		if (activityStartEvent.getActType().equals("delivery")) {
 			activityStartEvent.getPersonId();
 			shipmentTracking.trackPickupActivity(activityStartEvent);
 		}
@@ -115,7 +117,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 	@Override
 	public void handleEvent(LinkEnterEvent linkEnterEvent) {
-		vehiclesOnLink.put(linkEnterEvent.getVehicleId(),linkEnterEvent.getTime());
+		vehiclesOnLink.put(linkEnterEvent.getVehicleId(), linkEnterEvent.getTime());
 	}
 
 	@Override
@@ -132,7 +134,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 	@Override
 	public void handleEvent(PersonEntersVehicleEvent event) {
-			freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(),event.getVehicleId(), event.getTime());
+		freightAnalysisVehicleTracking.addDriver2Vehicle(event.getPersonId(), event.getVehicleId(), event.getTime());
 	}
 
 	@Override
@@ -141,64 +143,62 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	}
 
 
-	    @Override
-    public void handleEvent(ShipmentDeliveredEvent event) {
-        shipmentTracking.trackDeliveryEvent(event);
-    }
+	@Override
+	public void handleEvent(ShipmentDeliveredEvent event) {
+		shipmentTracking.trackDeliveryEvent(event);
+	}
 
-    @Override
-    public void handleEvent(ShipmentPickedUpEvent event) {
+	@Override
+	public void handleEvent(ShipmentPickedUpEvent event) {
 		shipmentTracking.trackPickedUpEvent(event);
-    }
+	}
 
-	public void exportVehicleInfo(String path){
+	public void exportVehicleInfo(String path) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleStats.tsv"));
 			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	vehicleCost	legCount");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
-			for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
+			for (Id vehId : trackers.keySet()) { //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
 				VehicleTracker tracker = trackers.get(vehId);
-				out.write(vehId.toString() + "	" + tracker.vehicleType.toString() + "	" + tracker.carrierId + "	" + tracker.lastDriverId + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString()+ "	" + tracker.tripHistory.size());
+				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + tracker.carrierId + "	" + tracker.lastDriverId + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
 			}
 			out.close();
 			System.out.println("File created successfully");
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			return; // TODO
 		}
 	}
 
-	public void exportVehicleTripInfo(String path){
+	public void exportVehicleTripInfo(String path) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleTripStats.tsv"));
 			out.write("VehicleId	VehicleType	LegNumber	CarrierId	DriverID	tripRoadTime	tripDistance	tripVehicleCost");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
-			for(Id vehId : trackers.keySet()){ //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
+			for (Id vehId : trackers.keySet()) { //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
-				for (VehicleTracker.VehicleTrip trip: tracker.tripHistory){
-					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + tracker.carrierId + "	" + trip.driverId + trip.travelTime + "	" +  trip.travelDistance + "	" + trip.cost);
+				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
+					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + tracker.carrierId + "	" + trip.driverId + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
 					out.newLine();
 					i++;
 				}
 			}
 			out.close();
 			System.out.println("File created successfully");
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			return; // TODO
 		}
 	}
 
-	public void exportCarrierInfo(String path){
-		for(Carrier carrier:carriers.getCarriers().values()){
-			HashMap<VehicleType,CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
+	public void exportCarrierInfo(String path) {
+		for (Carrier carrier : carriers.getCarriers().values()) {
+			HashMap<VehicleType, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
 			try {
-				BufferedWriter out = new BufferedWriter(new FileWriter(path+"/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
-				for(VehicleTracker tracker : freightAnalysisVehicleTracking.getTrackers().values()) {
+				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
+				for (VehicleTracker tracker : freightAnalysisVehicleTracking.getTrackers().values()) {
 					if (tracker.carrierId.equals(carrier.getId())) {
 						if (!vehicleTypeStatsMap.containsKey(tracker.vehicleType)) {
 							vehicleTypeStatsMap.put(tracker.vehicleType, new CarrierVehicleTypeStats());
@@ -214,9 +214,9 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 				out.write("vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
 				out.newLine();
-				for(VehicleType vt:vehicleTypeStatsMap.keySet()){
+				for (VehicleType vt : vehicleTypeStatsMap.keySet()) {
 					CarrierVehicleTypeStats vts = vehicleTypeStatsMap.get(vt);
-					out.write(vt.getId().toString() + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime+ "	" + vts.totalRoadTime+ "	" + vts.totalCost);
+					out.write(vt.getId().toString() + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime + "	" + vts.totalRoadTime + "	" + vts.totalCost);
 					out.newLine();
 				}
 				out.close();
@@ -226,50 +226,59 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		}
 	}
 
-	public void exportServiceInfo(String path){
-		try{
+	public void exportServiceInfo(String path) {
+		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
 			out.write("carrierID	serviceId	currentDriverId	vehicleType	ServiceETA	TourETA ArrivalTime");
 			out.newLine();
-		for(ServiceTracker serviceTracker:serviceTracking.trackers.values()){
-			out.write(serviceTracker.carrierId.toString() + "	" + serviceTracker.serviceId.toString() + "	" + serviceTracker.driverId.toString() + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
-			out.newLine();
-		}
-		out.close();
-		}catch (IOException e){
+			for (ServiceTracker serviceTracker : serviceTracking.trackers.values()) {
+				out.write(serviceTracker.carrierId.toString() + "	" + serviceTracker.serviceId.toString() + "	" + serviceTracker.driverId.toString() + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
+				out.newLine();
+			}
+			out.close();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void exportShipmentInfo(String path){
-		for(Carrier carrier:carriers.getCarriers().values()){
-			HashMap<VehicleType,CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
-			try {
-				BufferedWriter out = new BufferedWriter(new FileWriter(path+"/shipments_carrier_" + carrier.getId().toString() + ".tsv"));
+	public void exportShipmentInfo(String path) {
+		try {
+			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/shipmentStats.tsv"));
+			for (Carrier carrier : carriers.getCarriers().values()) {
+				HashMap<VehicleType, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
+				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/shipments_carrier_" + carrier.getId().toString() + ".tsv"));
 				out.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
 				out.newLine();
-				for(CarrierShipment shipment: carrier.getShipments().values()){
+				singleFile.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
+				singleFile.newLine();
+				for (CarrierShipment shipment : carrier.getShipments().values()) {
 					ShipmentTracker shipmentTracker = shipmentTracking.getShipments().get(shipment.getId());
-					if (shipmentTracker == null){continue;};
-					Boolean onTimePickup = ((shipment.getPickupTimeWindow().getStart() <= shipmentTracker.pickUpTime) && shipmentTracker.pickUpTime<= shipment.getPickupTimeWindow().getEnd());
-					Boolean onTimeDelivery = ((shipment.getDeliveryTimeWindow().getStart())<=shipmentTracker.pickUpTime)&& (shipmentTracker.deliveryTime<=shipment.getDeliveryTimeWindow().getEnd());
+					if (shipmentTracker == null) {
+						continue;
+					}
+					;
+					Boolean onTimePickup = ((shipment.getPickupTimeWindow().getStart() <= shipmentTracker.pickUpTime) && shipmentTracker.pickUpTime <= shipment.getPickupTimeWindow().getEnd());
+					Boolean onTimeDelivery = ((shipment.getDeliveryTimeWindow().getStart()) <= shipmentTracker.pickUpTime) && (shipmentTracker.deliveryTime <= shipment.getDeliveryTimeWindow().getEnd());
 					String driverIdString;
-					if(shipmentTracker.driverId.toString().equals("-1")){
+					if (shipmentTracker.driverId.toString().equals("-1")) {
 						driverIdString = "?" + shipmentTracker.driverIdGuess.toString();
 					} else {
 						driverIdString = shipmentTracker.driverId.toString();
 					}
-					Id<Vehicle> vehicleId = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId)==null) ? Id.createVehicleId(-1) : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId);
+					Id<Vehicle> vehicleId = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null) ? Id.createVehicleId(-1) : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId);
 					Id<Link> from = shipment.getFrom();
 					Id<Link> toLink = shipment.getTo();
 					double dist = NetworkUtils.getEuclideanDistance(network.getLinks().get(from).getCoord(), network.getLinks().get(toLink).getCoord());
 					out.write(carrier.getId().toString() + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleId.toString() + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
 					out.newLine();
+					singleFile.write(carrier.getId().toString() + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleId.toString() + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
+					singleFile.newLine();
 				}
 				out.close();
-			} catch (IOException e) {
-				e.printStackTrace();
 			}
+			singleFile.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 

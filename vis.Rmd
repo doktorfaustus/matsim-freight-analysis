@@ -1,0 +1,15 @@
+---
+title: "MATSim-freight"
+output: html_notebook
+---
+
+
+```{r setup}
+setwd("/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/matsim-freight-analysis/freightOutput")
+library(tidyverse)
+vehicleStats <- read_tsv("freightOutput/freightVehicleStats.tsv")
+tripStats <- read_tsv("freightOutput/freightVehicleTripStats.tsv")
+serviceStats <- read_tsv("freightOutput/serviceStats.tsv")
+shipmentStats <- read_tsv("freightOutput/shipmentStats.tsv")
+
+```
