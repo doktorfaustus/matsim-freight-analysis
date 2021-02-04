@@ -181,7 +181,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
-					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + tracker.carrierId + "	" + trip.driverId + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
+					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + tracker.carrierId + "	" + trip.driverId + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
 					out.newLine();
 					i++;
 				}

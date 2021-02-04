@@ -1,15 +1,29 @@
 ---
 title: "MATSim-freight"
-output: html_notebook
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
-
-```{r setup}
-setwd("/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/matsim-freight-analysis/freightOutput")
+# Dokument
+```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyverse)
-vehicleStats <- read_tsv("freightOutput/freightVehicleStats.tsv")
+vehicleStats <- read_tsv("freightOutput/freightVehicleStats.tsv") %>% mutate(travelDistance=travelDistance/1000)
 tripStats <- read_tsv("freightOutput/freightVehicleTripStats.tsv")
 serviceStats <- read_tsv("freightOutput/serviceStats.tsv")
 shipmentStats <- read_tsv("freightOutput/shipmentStats.tsv")
-
 ```
+## Comparison of VehicleTypes
+electro vehicles unsurprisingly have a short range
+
+```{r fig.cap ="travelDistance distribution of vehicle types", echo=FALSE, warning=FALSE}
+ggplot(data=vehicleStats, aes(travelDistance, color=VehicleType))+
+  geom_density()+
+  facet_wrap("VehicleType")
+```
+ 
+ 
+ 
+ 
+ 

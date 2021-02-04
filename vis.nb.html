@@ -239,18 +239,42 @@ summary {
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2V0d2QoXCIvVXNlcnMvamFrb2IvZGViaWFuc2Vydi9kYXRhL1VuaS9NYXN0ZXIvMjAyMF9XUy9NQVRTaW1fQWR2YW5jZWQvbWF0c2ltLWZyZWlnaHQvbWF0c2ltLWZyZWlnaHQtYW5hbHlzaXMvZnJlaWdodE91dHB1dFwiKVxubGlicmFyeSh0aWR5dmVyc2UpXG52ZWhpY2xlU3RhdHMgPC0gcmVhZF90c3YoXCJmcmVpZ2h0T3V0cHV0L2ZyZWlnaHRWZWhpY2xlU3RhdHMudHN2XCIpXG50cmlwU3RhdHMgPC0gcmVhZF90c3YoXCJmcmVpZ2h0T3V0cHV0L2ZyZWlnaHRWZWhpY2xlVHJpcFN0YXRzLnRzdlwiKVxuc2VydmljZVN0YXRzIDwtIHJlYWRfdHN2KFwiZnJlaWdodE91dHB1dC9zZXJ2aWNlU3RhdHMudHN2XCIpXG5zaGlwbWVudFN0YXRzIDwtIHJlYWRfdHN2KFwiZnJlaWdodE91dHB1dC9zaGlwbWVudFN0YXRzLnRzdlwiKVxuXG5gYGAifQ== -->
-<pre class="r"><code>setwd(&quot;/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/matsim-freight-analysis/freightOutput&quot;)
-library(tidyverse)
-vehicleStats &lt;- read_tsv(&quot;freightOutput/freightVehicleStats.tsv&quot;)
-tripStats &lt;- read_tsv(&quot;freightOutput/freightVehicleTripStats.tsv&quot;)
-serviceStats &lt;- read_tsv(&quot;freightOutput/serviceStats.tsv&quot;)
-shipmentStats &lt;- read_tsv(&quot;freightOutput/shipmentStats.tsv&quot;)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudmVoaWNsZVN0YXRzIDwtIHJlYWRfdHN2KFwiZnJlaWdodE91dHB1dC9mcmVpZ2h0VmVoaWNsZVN0YXRzLnRzdlwiKVxuXG5gYGAifQ== -->
+<pre class="r"><code>vehicleStats &lt;- read_tsv(&quot;freightOutput/freightVehicleStats.tsv&quot;)
 </code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG7ilIDilIAgQ29sdW1uIHNwZWNpZmljYXRpb24g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG5jb2xzKFxuICBWZWhpY2xlSWQgPSBjb2xfY2hhcmFjdGVyKCksXG4gIFZlaGljbGVUeXBlID0gY29sX2NoYXJhY3RlcigpLFxuICBDYXJyaWVySWQgPSBjb2xfZG91YmxlKCksXG4gIERyaXZlcklEID0gY29sX2NoYXJhY3RlcigpLFxuICBzZXJ2aWNlVGltZSA9IGNvbF9kb3VibGUoKSxcbiAgcm9hZFRpbWUgPSBjb2xfZG91YmxlKCksXG4gIHRyYXZlbERpc3RhbmNlID0gY29sX2RvdWJsZSgpLFxuICB2ZWhpY2xlQ29zdCA9IGNvbF9kb3VibGUoKSxcbiAgbGVnQ291bnQgPSBjb2xfZG91YmxlKClcbilcbiJ9 -->
+<pre><code>
+── Column specification ───────────────────────────────────────────────────────────────────────────────────────────────
+cols(
+  VehicleId = col_character(),
+  VehicleType = col_character(),
+  CarrierId = col_double(),
+  DriverID = col_character(),
+  serviceTime = col_double(),
+  roadTime = col_double(),
+  travelDistance = col_double(),
+  vehicleCost = col_double(),
+  legCount = col_double()
+)</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZ2dwbG90KGRhdGE9dmVoaWNsZVN0YXRzLCBhZXMoeCA9IGxlZ0NvdW50KSkrXG4gIGdlb21faGlzdG9ncmFtKCkrXG4gIGZhY2V0X3dyYXAoXCJWZWhpY2xlVHlwZVwiKVxuXG5nZ3Bsb3QoZGF0YT12ZWhpY2xlU3RhdHMsIG1hcHBpbmc9YWVzKHg9cm9hZFRpbWUsIHk9c2VydmljZVRpbWUpKStcbiAgZ2VvbV9wb2ludCgpXG5gYGAifQ== -->
+<pre class="r"><code>ggplot(data=vehicleStats, aes(x = legCount))+
+  geom_histogram()+
+  facet_wrap(&quot;VehicleType&quot;)
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiTUFUU2ltLWZyZWlnaHQiCm91dHB1dDogaHRtbF9ub3RlYm9vawotLS0KCgpgYGB7ciBzZXR1cH0Kc2V0d2QoIi9Vc2Vycy9qYWtvYi9kZWJpYW5zZXJ2L2RhdGEvVW5pL01hc3Rlci8yMDIwX1dTL01BVFNpbV9BZHZhbmNlZC9tYXRzaW0tZnJlaWdodC9tYXRzaW0tZnJlaWdodC1hbmFseXNpcy9mcmVpZ2h0T3V0cHV0IikKbGlicmFyeSh0aWR5dmVyc2UpCnZlaGljbGVTdGF0cyA8LSByZWFkX3RzdigiZnJlaWdodE91dHB1dC9mcmVpZ2h0VmVoaWNsZVN0YXRzLnRzdiIpCnRyaXBTdGF0cyA8LSByZWFkX3RzdigiZnJlaWdodE91dHB1dC9mcmVpZ2h0VmVoaWNsZVRyaXBTdGF0cy50c3YiKQpzZXJ2aWNlU3RhdHMgPC0gcmVhZF90c3YoImZyZWlnaHRPdXRwdXQvc2VydmljZVN0YXRzLnRzdiIpCnNoaXBtZW50U3RhdHMgPC0gcmVhZF90c3YoImZyZWlnaHRPdXRwdXQvc2hpcG1lbnRTdGF0cy50c3YiKQoKYGBgCg==</div>
+ggplot(data=vehicleStats, mapping=aes(x=roadTime, y=serviceTime))+
+  geom_point()</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+
+<div id="rmd-source-code">LS0tCnRpdGxlOiAiTUFUU2ltLWZyZWlnaHQiCm91dHB1dDogaHRtbF9ub3RlYm9vawotLS0KCgpgYGB7ciBzZXR1cH0Kc2V0d2QoIi9Vc2Vycy9qYWtvYi9kZWJpYW5zZXJ2L2RhdGEvVW5pL01hc3Rlci8yMDIwX1dTL01BVFNpbV9BZHZhbmNlZC9tYXRzaW0tZnJlaWdodC9tYXRzaW0tZnJlaWdodC1hbmFseXNpcy9mcmVpZ2h0T3V0cHV0IikKbGlicmFyeSh0aWR5dmVyc2UpCnZlaGljbGVTdGF0cyA8LSByZWFkX3RzdigiZnJlaWdodE91dHB1dC9mcmVpZ2h0VmVoaWNsZVN0YXRzLnRzdiIpCnRyaXBTdGF0cyA8LSByZWFkX3RzdigiZnJlaWdodE91dHB1dC9mcmVpZ2h0VmVoaWNsZVRyaXBTdGF0cy50c3YiKQpzZXJ2aWNlU3RhdHMgPC0gcmVhZF90c3YoImZyZWlnaHRPdXRwdXQvc2VydmljZVN0YXRzLnRzdiIpCnNoaXBtZW50U3RhdHMgPC0gcmVhZF90c3YoImZyZWlnaHRPdXRwdXQvc2hpcG1lbnRTdGF0cy50c3YiKQoKYGBgCgpgYGB7ciBhc2RmfQpnZ3Bsb3QoZGF0YT12ZWhpY2xlU3RhdHMsIGFlcyh4ID0gbGVnQ291bnQpKSsKICBnZW9tX2hpc3RvZ3JhbSgpKwogIGZhY2V0X3dyYXAoIlZlaGljbGVUeXBlIikKCmdncGxvdChkYXRhPXZlaGljbGVTdGF0cywgbWFwcGluZz1hZXMoeD1yb2FkVGltZSwgeT1zZXJ2aWNlVGltZSkpKwogIGdlb21fcG9pbnQoKQogYGBgCiAKIA==</div>
 
 
 
