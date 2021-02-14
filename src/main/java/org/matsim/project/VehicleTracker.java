@@ -21,9 +21,9 @@ public class VehicleTracker {
 	Double travelDistance = 0.0;
 	Double emptyTime = 0.0;
 	Double emptyDistance = 0.0;
-	Id<Carrier> carrierId = Id.create(-1,Carrier.class);
+	Id<Carrier> carrierId;
 	Double cost = 0.0;
-	Id<Person> currentDriverId = Id.createPersonId(-1);
+	Id<Person> currentDriverId;
 	Double usageStartStime = 0.0;
 
 	public VehicleTracker(Vehicle vehicle) {
@@ -31,10 +31,10 @@ public class VehicleTracker {
 	}
 
 	static class VehicleTrip {
-		Id<Person> driverId = Id.createPersonId(-1);
+		Id<Person> driverId ;
 		Double travelTime = 0.0;
 		Double travelDistance = 0.0;
-		Id<Carrier> carrierId = Id.create(-1, Carrier.class);
+		Id<Carrier> carrierId;
 		Double cost=0.0;
 
 		public VehicleTrip(Id<Person> currentDriverId, double currentTripDistance, double currentTripDuration, double cost) {

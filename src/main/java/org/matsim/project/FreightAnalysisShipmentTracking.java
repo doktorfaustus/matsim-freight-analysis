@@ -38,7 +38,7 @@ public class FreightAnalysisShipmentTracking {
 	public void trackDeliveryActivity(ActivityStartEvent activityStartEvent) {
     	for (ShipmentTracker shipment: shipments.values()){
     		if (shipment.to==activityStartEvent.getLinkId() ){
-				if(shipment.driverId.toString().equals("-1")){
+				if(shipment.driverId == null){
 					if(shipment.shipment.getDeliveryTimeWindow().getStart()<=activityStartEvent.getTime() && activityStartEvent.getTime()<=shipment.shipment.getDeliveryTimeWindow().getEnd()){
 						if (shipment.possibleDrivers.contains(activityStartEvent.getPersonId().toString())) {
 							shipment.driverIdGuess = activityStartEvent.getPersonId();
@@ -55,7 +55,7 @@ public class FreightAnalysisShipmentTracking {
 	public void trackPickupActivity(ActivityStartEvent activityStartEvent) {
     	for (ShipmentTracker shipmentTracker: shipments.values()){
     		if (shipmentTracker.from==activityStartEvent.getLinkId()){
-    			if (shipmentTracker.driverId.toString().equals("-1")){
+    			if (shipmentTracker.driverId==null){
     				if(shipmentTracker.shipment.getPickupTimeWindow().getStart()<=activityStartEvent.getTime() && activityStartEvent.getTime()<=shipmentTracker.shipment.getPickupTimeWindow().getEnd()){
     					shipmentTracker.possibleDrivers.add(activityStartEvent.getPersonId().toString());
 					}

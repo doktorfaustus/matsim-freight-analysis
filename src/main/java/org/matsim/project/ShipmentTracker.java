@@ -9,7 +9,7 @@ import org.matsim.contrib.freight.carrier.CarrierShipment;
 import java.util.HashSet;
 
 public class ShipmentTracker {
-    public Id<Person> driverIdGuess = Id.createPersonId(-1);
+    public Id<Person> driverIdGuess;
     public double deliveryTimeGuess;
     public HashSet<String> possibleDrivers = new HashSet<String>();
     Id<Link> from;
@@ -17,10 +17,10 @@ public class ShipmentTracker {
     public Double pickUpTime = 0.;
     public Double deliveryDuration = 0.;
     public Double deliveryTime = 0.;
-    public Id<Person> driverId = Id.createPersonId(-1);
+    public Id<Person> driverId;
     public CarrierShipment shipment;
-    public Id<CarrierShipment> id = Id.create(-1, CarrierShipment.class);
-    public Id<Carrier> carrierId = Id.create(-1, Carrier.class);
+    public Id<CarrierShipment> id;
+    public Id<Carrier> carrierId;
 
     public ShipmentTracker(CarrierShipment shipment) {
         this.id = shipment.getId();

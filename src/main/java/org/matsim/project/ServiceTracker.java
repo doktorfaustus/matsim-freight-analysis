@@ -11,8 +11,8 @@ public class ServiceTracker {
 	public double expectedArrival;
 	public Id<Link> linkId=Id.createLinkId(-1);
 	public Double calculatedArrival;
-	public Id<Carrier> carrierId = Id.create(-1,Carrier.class);
-	public Id<Person> driverId = Id.createPersonId(-1);
+	public Id<Carrier> carrierId ;
+	public Id<Person> driverId ;
 	public Double arrivalTime;
 	Double scheduledStartTime;
 Boolean onTimeArrival;

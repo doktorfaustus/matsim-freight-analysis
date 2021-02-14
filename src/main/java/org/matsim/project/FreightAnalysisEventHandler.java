@@ -161,7 +161,9 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
 			for (Id vehId : trackers.keySet()) { //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
 				VehicleTracker tracker = trackers.get(vehId);
-				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + tracker.carrierId + "	" + tracker.lastDriverId + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
+				String lastDriverIdString = id2String(tracker.lastDriverId);
+				String carrierIdString = id2String(tracker.carrierId);
+				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
 			}
 			out.close();
@@ -181,7 +183,9 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
-					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + tracker.carrierId + "	" + trip.driverId + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
+					String driverIdString = trip.driverId == null ? "" : trip.driverId.toString();
+					String carrierIdString = tracker.carrierId == null ? "" : tracker.carrierId.toString();
+					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
 					out.newLine();
 					i++;
 				}
@@ -199,7 +203,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			try {
 				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
 				for (VehicleTracker tracker : freightAnalysisVehicleTracking.getTrackers().values()) {
-					if (tracker.carrierId.equals(carrier.getId())) {
+					if (id2String(tracker.carrierId).equals(id2String(carrier.getId()))) {
 						if (!vehicleTypeStatsMap.containsKey(tracker.vehicleType)) {
 							vehicleTypeStatsMap.put(tracker.vehicleType, new CarrierVehicleTypeStats());
 						}
@@ -211,7 +215,6 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 						cVtStTr.totalServiceTime += tracker.serviceTime;
 					}
 				}
-
 				out.write("vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
 				out.newLine();
 				for (VehicleType vt : vehicleTypeStatsMap.keySet()) {
@@ -232,7 +235,10 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			out.write("carrierID	serviceId	currentDriverId	vehicleType	ServiceETA	TourETA ArrivalTime");
 			out.newLine();
 			for (ServiceTracker serviceTracker : serviceTracking.trackers.values()) {
-				out.write(serviceTracker.carrierId.toString() + "	" + serviceTracker.serviceId.toString() + "	" + serviceTracker.driverId.toString() + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
+				String carrierIdString = id2String(serviceTracker.carrierId);
+				String serviceIdString = id2String(serviceTracker.serviceId);
+				String driverIdString = id2String(serviceTracker.driverId);
+				out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
 				out.newLine();
 			}
 			out.close();
@@ -256,22 +262,20 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 					if (shipmentTracker == null) {
 						continue;
 					}
-					;
 					Boolean onTimePickup = ((shipment.getPickupTimeWindow().getStart() <= shipmentTracker.pickUpTime) && shipmentTracker.pickUpTime <= shipment.getPickupTimeWindow().getEnd());
 					Boolean onTimeDelivery = ((shipment.getDeliveryTimeWindow().getStart()) <= shipmentTracker.pickUpTime) && (shipmentTracker.deliveryTime <= shipment.getDeliveryTimeWindow().getEnd());
-					String driverIdString;
-					if (shipmentTracker.driverId.toString().equals("-1")) {
-						driverIdString = "?" + shipmentTracker.driverIdGuess.toString();
-					} else {
-						driverIdString = shipmentTracker.driverId.toString();
-					}
-					Id<Vehicle> vehicleId = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null) ? Id.createVehicleId(-1) : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId);
 					Id<Link> from = shipment.getFrom();
 					Id<Link> toLink = shipment.getTo();
+					String carrierIdString = id2String(carrier.getId());
+					String shipmentIdString = id2String(shipment.getId());
+					String driverIdString = shipmentTracker.driverId==null?id2String(shipmentTracker.driverIdGuess):id2String(shipmentTracker.driverId);
+					String vehicleIdString = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null) ? "" : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId).toString();
+
+
 					double dist = NetworkUtils.getEuclideanDistance(network.getLinks().get(from).getCoord(), network.getLinks().get(toLink).getCoord());
-					out.write(carrier.getId().toString() + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleId.toString() + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
+					out.write(carrierIdString + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleIdString + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
 					out.newLine();
-					singleFile.write(carrier.getId().toString() + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleId.toString() + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
+					singleFile.write(carrierIdString + "	" + shipmentIdString + "	" + driverIdString + "	" + vehicleIdString + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
 					singleFile.newLine();
 				}
 				out.close();
@@ -280,6 +284,10 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+
+	}
+	private String id2String(Id id){ //Failsafe Id to String - Converter, because Id.toString() throws Exception if the Id is null.
+		return id==null?"":id.toString();
 	}
 
 
