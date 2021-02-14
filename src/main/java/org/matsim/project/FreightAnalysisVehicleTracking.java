@@ -26,7 +26,6 @@ public class FreightAnalysisVehicleTracking {
 		if (!trackers.containsKey(vehId)) {
 			return;
 		}
-		//hier könnte man noch was warnen
 
 		VehicleTracker tracker = trackers.get(vehId);
 		tracker.cost =

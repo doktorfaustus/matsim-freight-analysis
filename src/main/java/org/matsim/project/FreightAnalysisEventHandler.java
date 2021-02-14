@@ -25,7 +25,7 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
-public class FreightAnalysisEventHandler implements ActivityEndEventHandler, ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler {
+public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler {
 	private final static Logger log = Logger.getLogger(FreightAnalysisEventHandler.class);
 	private Vehicles vehicles;
 	private Network network;
@@ -50,11 +50,11 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 
 
 		for (Carrier carrier : carriers.getCarriers().values()) {
-			for (Vehicle vehicle : vehicles.getVehicles().values()) {
-				if (vehicle.getId().toString().contains("veh_carrier_" + carrier.getId())) {
-					freightAnalysisVehicleTracking.addCarrier2Vehicle(vehicle.getId(), carrier.getId()); // funktioniert nicht, weil Ids nicht stimmen.
-				}
-			}
+
+			// insert carrier>vehicle mapping as soon as vehicle id can be obtained from carrier plans
+			//for (Vehicle vehicle : vehicles.getVehicles().values()) {
+			//}
+
 			for (CarrierShipment shipment : carrier.getShipments().values()) {
 				shipmentTracking.addTracker(shipment);
 			}
@@ -82,12 +82,6 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		}
 	}
 
-	@Override
-	public void handleEvent(ActivityEndEvent activityEndEvent) {
-		if (activityEndEvent.getActType().equals("start")) {
-
-		}
-	}
 
 	@Override
 	public void handleEvent(ActivityStartEvent activityStartEvent) {
@@ -103,12 +97,10 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 		}
 
 		if (activityStartEvent.getActType().equals("delivery")) {
-			activityStartEvent.getPersonId();
 			shipmentTracking.trackDeliveryActivity(activityStartEvent);
 		}
 
-		if (activityStartEvent.getActType().equals("delivery")) {
-			activityStartEvent.getPersonId();
+		if (activityStartEvent.getActType().equals("pickup")){
 			shipmentTracking.trackPickupActivity(activityStartEvent);
 		}
 
@@ -126,9 +118,8 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
 			Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
 
-			if (vehicles.getVehicles().get(linkLeaveEvent.getVehicleId()).getType().getCapacity().getOther() > 0) {
-				freightAnalysisVehicleTracking.addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, linkLength, false);
-			}
+			// (the method checks for itself whether the vehicle is to be tracked or not)
+			freightAnalysisVehicleTracking.addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, linkLength, false);
 		}
 	}
 
@@ -159,7 +150,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	vehicleCost	legCount");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
-			for (Id vehId : trackers.keySet()) { //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
+			for (Id vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				String lastDriverIdString = id2String(tracker.lastDriverId);
 				String carrierIdString = id2String(tracker.carrierId);
@@ -179,7 +170,7 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 			out.write("VehicleId	VehicleType	LegNumber	CarrierId	DriverID	tripRoadTime	tripDistance	tripVehicleCost");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = freightAnalysisVehicleTracking.getTrackers();
-			for (Id vehId : trackers.keySet()) { //das funktioniert so nicht mehr, wenn alle Tracker hier gebündelt sind.
+			for (Id vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
@@ -250,13 +241,13 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 	public void exportShipmentInfo(String path) {
 		try {
 			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/shipmentStats.tsv"));
+			singleFile.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
+			singleFile.newLine();
 			for (Carrier carrier : carriers.getCarriers().values()) {
 				HashMap<VehicleType, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
 				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/shipments_carrier_" + carrier.getId().toString() + ".tsv"));
 				out.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
 				out.newLine();
-				singleFile.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
-				singleFile.newLine();
 				for (CarrierShipment shipment : carrier.getShipments().values()) {
 					ShipmentTracker shipmentTracker = shipmentTracking.getShipments().get(shipment.getId());
 					if (shipmentTracker == null) {
@@ -268,9 +259,8 @@ public class FreightAnalysisEventHandler implements ActivityEndEventHandler, Act
 					Id<Link> toLink = shipment.getTo();
 					String carrierIdString = id2String(carrier.getId());
 					String shipmentIdString = id2String(shipment.getId());
-					String driverIdString = shipmentTracker.driverId==null?id2String(shipmentTracker.driverIdGuess):id2String(shipmentTracker.driverId);
+					String driverIdString = shipmentTracker.driverId==null?"?"+id2String(shipmentTracker.driverIdGuess):id2String(shipmentTracker.driverId);
 					String vehicleIdString = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null) ? "" : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId).toString();
-
 
 					double dist = NetworkUtils.getEuclideanDistance(network.getLinks().get(from).getCoord(), network.getLinks().get(toLink).getCoord());
 					out.write(carrierIdString + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleIdString + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
