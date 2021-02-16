@@ -42,9 +42,9 @@ public class FreightAnalysisShipmentTracking {
 					if(shipment.shipment.getDeliveryTimeWindow().getStart()<=activityStartEvent.getTime() && activityStartEvent.getTime()<=shipment.shipment.getDeliveryTimeWindow().getEnd()){
 						if (shipment.possibleDrivers.contains(activityStartEvent.getPersonId().toString())) {
 							shipment.driverIdGuess = activityStartEvent.getPersonId();
+							shipment.deliveryTimeGuess=activityStartEvent.getTime();
 						}
 					}
-					shipment.deliveryTimeGuess=activityStartEvent.getTime();
 				} else if (shipment.driverId.toString().equals(activityStartEvent.getPersonId().toString())){
 					shipment.deliveryTime=activityStartEvent.getTime();
 				}

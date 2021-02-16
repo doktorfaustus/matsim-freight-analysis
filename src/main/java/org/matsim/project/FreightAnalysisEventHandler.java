@@ -60,20 +60,21 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			}
 
 			for (CarrierService service : carrier.getServices().values()) {
-				serviceTracking.addTracker(service);
+				serviceTracking.addTracker(service, carrier.getId());
 			}
 			for (ScheduledTour tour : carrier.getSelectedPlan().getScheduledTours()) {
 				Double calculatedArrivalTime = 0.0;
 				for (Tour.TourElement tourElement : tour.getTour().getTourElements()) {
 					if (tourElement instanceof Tour.Leg) {
-						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
+						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime(); // schätzen der Ankunftszeit aus TourLegs
 					}
 					if (tourElement instanceof Tour.ServiceActivity) { //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
-						Id<CarrierService> serviceId = ((Tour.ServiceActivity) tourElement).getService().getId();
-						serviceTracking.trackers.get(serviceId).expectedArrival = ((Tour.ServiceActivity) tourElement).getExpectedArrival();
-						serviceTracking.trackers.get(serviceId).linkId = ((Tour.ServiceActivity) tourElement).getLocation();
+						Tour.ServiceActivity serviceAct = (Tour.ServiceActivity) tourElement;
+							Id<CarrierService> serviceId = serviceAct.getService().getId();
+						serviceTracking.setExpectedArrival(serviceId, serviceAct.getExpectedArrival());
 						if (calculatedArrivalTime > 0.0) {
-							serviceTracking.trackers.get(serviceId).calculatedArrival = calculatedArrivalTime; //in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
+							//in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
+							serviceTracking.setCalculatedArrival(serviceId, calculatedArrivalTime);
 							calculatedArrivalTime = 0.0;
 						}
 					}
@@ -91,9 +92,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			vehicleUnit.serviceTime += activityStartEvent.getTime() - vehicleUnit.usageStartStime;
 		}
 		if (activityStartEvent.getActType().equals("service")) {
-			activityStartEvent.getPersonId();
-			activityStartEvent.getLinkId();
-			activityStartEvent.getTime();
+			serviceTracking.trackServiceActivityStart(activityStartEvent);
 		}
 
 		if (activityStartEvent.getActType().equals("delivery")) {
@@ -223,13 +222,14 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public void exportServiceInfo(String path) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
-			out.write("carrierID	serviceId	currentDriverId	vehicleType	ServiceETA	TourETA ArrivalTime");
+			out.write("carrierID	serviceId	currentDriverId	ServiceETA	TourETA ArrivalTime");
 			out.newLine();
-			for (ServiceTracker serviceTracker : serviceTracking.trackers.values()) {
+			for (ServiceTracker serviceTracker : serviceTracking.getTrackers().values()) {
 				String carrierIdString = id2String(serviceTracker.carrierId);
 				String serviceIdString = id2String(serviceTracker.serviceId);
-				String driverIdString = id2String(serviceTracker.driverId);
-				out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + serviceTracker.arrivalTime);
+				String driverIdString = serviceTracker.driverId == null ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
+				String arrivalTime = serviceTracker.arrivalTime == 0.0 ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.arrivalTime.toString();
+				out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + arrivalTime);
 				out.newLine();
 			}
 			out.close();
