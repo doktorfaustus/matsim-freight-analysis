@@ -31,7 +31,7 @@ public class FreightAnalysisVehicleTracking {
 		tracker.cost =
 				tracker.cost + calculateCost(tracker.vehicleType, travelDistance, travelTime);
 		tracker.currentTripDistance += travelDistance;
-		tracker.currentTripDuration += travelDistance;
+		tracker.currentTripDuration += travelTime;
 
 		if (isEmpty) {
 			tracker.emptyDistance = tracker.emptyDistance + travelDistance;
