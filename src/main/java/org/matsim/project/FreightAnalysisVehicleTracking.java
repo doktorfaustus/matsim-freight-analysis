@@ -89,4 +89,8 @@ public class FreightAnalysisVehicleTracking {
 			tracker.currentTripDuration=0.0;
 		}
 	}
+
+	public void addCarrierGuess(Id<Vehicle> id, Id<Carrier> carrierGuess) {
+		trackers.get(id).carrierIdGuess = carrierGuess;
+	}
 }

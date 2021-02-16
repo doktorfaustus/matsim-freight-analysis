@@ -15,6 +15,7 @@ public class VehicleTracker {
 	public HashSet<VehicleTrip> tripHistory= new HashSet<>();
 	public double currentTripDuration;
 	public double currentTripDistance;
+	public Id<Carrier> carrierIdGuess;
 	VehicleType vehicleType;
 	Double travelTime = 0.0;
 	Double serviceTime = 0.0;

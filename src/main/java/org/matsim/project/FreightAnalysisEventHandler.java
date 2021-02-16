@@ -42,8 +42,20 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 		//for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
 		for (Vehicle vehicle : vehicles.getVehicles().values()) {
+			String vehicleIdString = vehicle.getId().toString();
 			if (vehicle.getId().toString().contains("freight")) {
 				freightAnalysisVehicleTracking.addTracker(vehicle);//CarrierId hier noch nicht bekannt
+
+				if(vehicle.getId().toString().contains(vehicle.getType().getId().toString())){
+					String carrierGuess = vehicleIdString.replaceAll("_veh.*","");
+					carrierGuess = carrierGuess.replaceAll("freight_", "");
+					for (Carrier carrier: carriers.getCarriers().values()){
+						if (carrier.getId().toString().equals(carrierGuess)){
+							freightAnalysisVehicleTracking.addCarrierGuess(vehicle.getId(),carrier.getId());
+						}
+					}
+				}
+
 				log.info("started tracking vehicle #" + vehicle.getId().toString());
 			}
 		}
@@ -152,7 +164,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (Id vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				String lastDriverIdString = id2String(tracker.lastDriverId);
-				String carrierIdString = id2String(tracker.carrierId);
+				String carrierIdString = tracker.carrierId==null ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
 				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
 			}
@@ -174,7 +186,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
 					String driverIdString = trip.driverId == null ? "" : trip.driverId.toString();
-					String carrierIdString = tracker.carrierId == null ? "" : tracker.carrierId.toString();
+					String carrierIdString = tracker.carrierId == null ? "?" + id2String(tracker.carrierIdGuess) : tracker.carrierId.toString();
 					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
 					out.newLine();
 					i++;
