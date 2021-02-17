@@ -14,8 +14,8 @@ public class RunFreightAnalysis {
     public static void main(String[] args) {
         // benoetigte Dateien:
         RunFreightAnalysis rfa = new RunFreightAnalysis();
-        String basePath = "output100";
-//        String basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
+    //    String basePath = "output100";
+        String basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
         rfa.runAnalysis(basePath);
     }
 
@@ -46,10 +46,10 @@ public class RunFreightAnalysis {
        MatsimEventsReader eventsReader = new MatsimEventsReader(eventsManager);
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
-       freightEventHandler.exportVehicleInfo("freightOutput");
-       freightEventHandler.exportVehicleTripInfo("freightOutput");
-       freightEventHandler.exportCarrierInfo("freightOutput");
-       freightEventHandler.exportServiceInfo("freightOutput");
-       freightEventHandler.exportShipmentInfo("freightOutput");
+       freightEventHandler.exportVehicleInfo("freightOutput", true);
+       freightEventHandler.exportVehicleTripInfo("freightOutput", true);
+       freightEventHandler.exportCarrierInfo("freightOutput", true);
+       freightEventHandler.exportServiceInfo("freightOutput", true);
+       freightEventHandler.exportShipmentInfo("freightOutput", true);
     }
 }
