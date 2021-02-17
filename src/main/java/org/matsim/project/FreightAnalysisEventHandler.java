@@ -5,12 +5,15 @@ import org.matsim.api.core.v01.events.*;
 import org.matsim.api.core.v01.events.handler.*;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
-import org.matsim.api.core.v01.population.Person;
 import org.matsim.contrib.freight.carrier.*;
 //import org.matsim.contrib.freight.events.ShipmentDeliveredEventHandler;
 //import org.matsim.contrib.freight.events.ShipmentPickedUpEventHandler;
+import org.matsim.contrib.freight.events.LSPServiceEndEvent;
+import org.matsim.contrib.freight.events.LSPServiceStartEvent;
 import org.matsim.contrib.freight.events.ShipmentDeliveredEvent;
 import org.matsim.contrib.freight.events.ShipmentPickedUpEvent;
+import org.matsim.contrib.freight.events.eventhandler.LSPServiceEndEventHandler;
+import org.matsim.contrib.freight.events.eventhandler.LSPServiceStartEventHandler;
 import org.matsim.contrib.freight.events.eventhandler.ShipmentDeliveredEventHandler;
 import org.matsim.contrib.freight.events.eventhandler.ShipmentPickedUpEventHandler;
 import org.matsim.core.network.NetworkUtils;
@@ -25,7 +28,9 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
-public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler {
+import static java.lang.Boolean.FALSE;
+
+public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler, LSPServiceStartEventHandler, LSPServiceEndEventHandler {
 	private final static Logger log = Logger.getLogger(FreightAnalysisEventHandler.class);
 	private Vehicles vehicles;
 	private Network network;
@@ -155,7 +160,10 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		shipmentTracking.trackPickedUpEvent(event);
 	}
 
-	public void exportVehicleInfo(String path) {
+	public void exportVehicleInfo(String path){
+		exportVehicleInfo(path, false);
+	}
+	public void exportVehicleInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleStats.tsv"));
 			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	vehicleCost	legCount");
@@ -164,7 +172,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (Id vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				String lastDriverIdString = id2String(tracker.lastDriverId);
-				String carrierIdString = tracker.carrierId==null ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
+				String carrierIdString = (tracker.carrierId==null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
 				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
 			}
@@ -175,7 +183,10 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
-	public void exportVehicleTripInfo(String path) {
+	public void exportVehicleTripInfo(String path){
+		exportVehicleTripInfo(path, false );
+	}
+	public void exportVehicleTripInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleTripStats.tsv"));
 			out.write("VehicleId	VehicleType	LegNumber	CarrierId	DriverID	tripRoadTime	tripDistance	tripVehicleCost");
@@ -186,7 +197,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
 					String driverIdString = trip.driverId == null ? "" : trip.driverId.toString();
-					String carrierIdString = tracker.carrierId == null ? "?" + id2String(tracker.carrierIdGuess) : tracker.carrierId.toString();
+					String carrierIdString = (tracker.carrierId == null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : tracker.carrierId.toString();
 					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
 					out.newLine();
 					i++;
@@ -231,7 +242,10 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
-	public void exportServiceInfo(String path) {
+	public void exportServiceInfo(String path){
+		exportServiceInfo(path, false);
+	}
+	public void exportServiceInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
 			out.write("carrierID	serviceId	currentDriverId	ServiceETA	TourETA ArrivalTime");
@@ -239,8 +253,8 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (ServiceTracker serviceTracker : serviceTracking.getTrackers().values()) {
 				String carrierIdString = id2String(serviceTracker.carrierId);
 				String serviceIdString = id2String(serviceTracker.serviceId);
-				String driverIdString = serviceTracker.driverId == null ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
-				String arrivalTime = serviceTracker.arrivalTime == 0.0 ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.arrivalTime.toString();
+				String driverIdString = (exportGuesses && serviceTracker.driverId == null) ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
+				String arrivalTime = (exportGuesses && serviceTracker.startTime == 0.0) ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.startTime.toString();
 				out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + arrivalTime);
 				out.newLine();
 			}
@@ -250,7 +264,10 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
-	public void exportShipmentInfo(String path) {
+	public void exportShipmentInfo(String path){
+		exportShipmentInfo(path, false);
+	}
+	public void exportShipmentInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/shipmentStats.tsv"));
 			singleFile.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
@@ -271,7 +288,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 					Id<Link> toLink = shipment.getTo();
 					String carrierIdString = id2String(carrier.getId());
 					String shipmentIdString = id2String(shipment.getId());
-					String driverIdString = shipmentTracker.driverId==null?"?"+id2String(shipmentTracker.driverIdGuess):id2String(shipmentTracker.driverId);
+					String driverIdString = (shipmentTracker.driverId == null && exportGuesses) ? "?" + id2String(shipmentTracker.driverIdGuess) : id2String(shipmentTracker.driverId);
 					String vehicleIdString = (freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null) ? "" : freightAnalysisVehicleTracking.getDriver2VehicleId(shipmentTracker.driverId).toString();
 
 					double dist = NetworkUtils.getEuclideanDistance(network.getLinks().get(from).getCoord(), network.getLinks().get(toLink).getCoord());
@@ -289,7 +306,17 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 	}
 	private String id2String(Id id){ //Failsafe Id to String - Converter, because Id.toString() throws Exception if the Id is null.
-		return id==null?"":id.toString();
+		return id==null?" ":id.toString();
+	}
+
+	@Override
+	public void handleEvent(LSPServiceEndEvent event) {
+		serviceTracking.handleEndEvent(event);
+	}
+
+	@Override
+	public void handleEvent(LSPServiceStartEvent event) {
+		serviceTracking.handleStartEvent(event);
 	}
 
 

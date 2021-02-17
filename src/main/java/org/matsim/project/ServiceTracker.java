@@ -14,11 +14,12 @@ public class ServiceTracker {
 	public Double calculatedArrival =0.0;
 	public Id<Carrier> carrierId ;
 	public Id<Person> driverId ;
-	public Double arrivalTime =0.0;
+	public Double startTime =0.0;
 	public HashSet<Id<Person>> possibleDrivers = new HashSet<>();
 	public Id<Person> driverIdGuess;
 	public Double arrivalTimeGuess = 0.0;
 	public double expectedArrival = 0.0;
+	public double endTime;
 
 	public ServiceTracker(CarrierService service) {
 		this.serviceId=service.getId();

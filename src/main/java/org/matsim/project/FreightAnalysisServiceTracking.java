@@ -1,10 +1,10 @@
 package org.matsim.project;
-
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.ActivityStartEvent;
 import org.matsim.contrib.freight.carrier.Carrier;
 import org.matsim.contrib.freight.carrier.CarrierService;
-import org.matsim.contrib.freight.carrier.Tour;
+import org.matsim.contrib.freight.events.LSPServiceEndEvent;
+import org.matsim.contrib.freight.events.LSPServiceStartEvent;
 
 import java.util.HashMap;
 
@@ -28,8 +28,6 @@ public class FreightAnalysisServiceTracking {
 	}
 
 	public void trackServiceActivityStart(ActivityStartEvent activityStartEvent) {
-		activityStartEvent.getPersonId();
-		activityStartEvent.getTime();
 		for (ServiceTracker service : trackers.values()){
 			if (service.service.getLocationLinkId().equals(activityStartEvent.getLinkId())){
 				if(service.driverId == null){
@@ -38,7 +36,7 @@ public class FreightAnalysisServiceTracking {
 							service.arrivalTimeGuess=activityStartEvent.getTime();
 					}
 				} else if (service.driverId.toString().equals(activityStartEvent.getPersonId().toString())){
-					service.arrivalTime=activityStartEvent.getTime();
+					service.startTime =activityStartEvent.getTime();
 				}
 			}
 		}
@@ -46,6 +44,16 @@ public class FreightAnalysisServiceTracking {
 
 	public void setExpectedArrival(Id<CarrierService> serviceId, double expectedArrival) {
 		trackers.get(serviceId).expectedArrival=expectedArrival;
+	}
+
+	public void handleStartEvent(LSPServiceStartEvent event) {
+		ServiceTracker service = trackers.get(event.getService().getId());
+		service.driverId = event.getDriverId();
+		service.startTime = event.getTime();
+	}
+	public void handleEndEvent(LSPServiceEndEvent event) {
+		ServiceTracker service = trackers.get(event.getService().getId());
+		service.endTime = event.getTime();
 	}
 
 }
