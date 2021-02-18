@@ -28,6 +28,11 @@ import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+/*
+* EventHandler for analysis of matsim-freight runs. Tracks freight vehicles, carriers, shipments and services and is able to export results to TSV files.
+* Only uses information that is certain by default. Without LSP Events this means that the connection between Carrier-related Objects (Carriers, Shipments, Services) often cannot be made, but this Handles tries to make an educated guess which you can optionally include in the export. Guessed info will be preceeded by "?" in export.
+* */
+
 public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler, LSPServiceStartEventHandler, LSPServiceEndEventHandler {
 	private final static Logger log = Logger.getLogger(FreightAnalysisEventHandler.class);
 	private Vehicles vehicles;
@@ -43,12 +48,17 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		this.vehicles = vehicles;
 		this.carriers = carriers;
 
-		//for (Carrier carrier: carriers.getCarriers().values()){ // Für alle "echten" Frachtfahrzeuge wird ein Tracker angelegt.
+		// the EventHandler tracks all vehicles containing "freight" by default which is as of now (02/21) the easiest way to do so, but not a pretty one.
+		// You can add trackers by yourself at will.
 		for (Vehicle vehicle : vehicles.getVehicles().values()) {
 			String vehicleIdString = vehicle.getId().toString();
 			if (vehicle.getId().toString().contains("freight")) {
-				vehicleTracking.addTracker(vehicle);//CarrierId hier noch nicht bekannt
+				vehicleTracking.addTracker(vehicle);
 
+				// if the vehicleId contains its own vehicleType, it is likely that the naming scheme
+				// freight_$CARRIER_veh_$VEHICLETYPE_[...]
+				// is used, so we try to extract the CarrierId based on this scheme and see if it is indeed a carrier.
+				// If that is the case, it is used as a guess for the Carrier.
 				if(vehicle.getId().toString().contains(vehicle.getType().getId().toString())){
 					String carrierGuess = vehicleIdString.replaceAll("_veh.*","");
 					carrierGuess = carrierGuess.replaceAll("freight_", "");
@@ -66,9 +76,8 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 		for (Carrier carrier : carriers.getCarriers().values()) {
 
-			// insert carrier>vehicle mapping as soon as vehicle id can be obtained from carrier plans
-			//for (Vehicle vehicle : vehicles.getVehicles().values()) {
-			//}
+		// for all shipments and services of the carriers, tracking is started here.
+		// once the vehicle or personIds can be obtained from the carrierFile, here would be a good moment to set that info to the trackers.
 
 			for (CarrierShipment shipment : carrier.getShipments().values()) {
 				shipmentTracking.addTracker(shipment);
@@ -77,18 +86,20 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (CarrierService service : carrier.getServices().values()) {
 				serviceTracking.addTracker(service, carrier.getId());
 			}
+
+			// If expectedArrivalTimes are given, those are passed unto the serviceTrackers.
+			// Otherwise they are estimated from the TourElements
 			for (ScheduledTour tour : carrier.getSelectedPlan().getScheduledTours()) {
 				Double calculatedArrivalTime = 0.0;
 				for (Tour.TourElement tourElement : tour.getTour().getTourElements()) {
 					if (tourElement instanceof Tour.Leg) {
-						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime(); // schätzen der Ankunftszeit aus TourLegs
+						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
 					}
-					if (tourElement instanceof Tour.ServiceActivity) { //TODO find out whether services can exist that are not included in a tour. If not, the servicetrackers could be constructed here. The current way enables detection of shipments not bound to tours.
+					if (tourElement instanceof Tour.ServiceActivity) {
 						Tour.ServiceActivity serviceAct = (Tour.ServiceActivity) tourElement;
 							Id<CarrierService> serviceId = serviceAct.getService().getId();
 						serviceTracking.setExpectedArrival(serviceId, serviceAct.getExpectedArrival());
 						if (calculatedArrivalTime > 0.0) {
-							//in case there is no expected Arrival for the service itself, we can at least track wether the estimate based on travel and departure times in the tour was correct.
 							serviceTracking.setCalculatedArrival(serviceId, calculatedArrivalTime);
 							calculatedArrivalTime = 0.0;
 						}
@@ -99,12 +110,11 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	}
 
 
+	// evaluating the ActivityEvents to track vehicle usage and guess what happens with services and shipments
 	@Override
 	public void handleEvent(ActivityStartEvent activityStartEvent) {
 		if (activityStartEvent.getActType().equals("end")) {
 			vehicleTracking.endVehicleUsage(activityStartEvent.getPersonId());
-			VehicleTracker vehicleUnit = vehicleTracking.getTrackers().get(vehicleTracking.getDriver2VehicleId(activityStartEvent.getPersonId()));
-			vehicleUnit.serviceTime += activityStartEvent.getTime() - vehicleUnit.usageStartStime;
 		}
 		if (activityStartEvent.getActType().equals("service")) {
 			serviceTracking.trackServiceActivityStart(activityStartEvent);
@@ -120,7 +130,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 	}
 
-
+	// link events are used to calculate vehicle travel time and distance
 	@Override
 	public void handleEvent(LinkEnterEvent linkEnterEvent) {
 		vehiclesOnLink.put(linkEnterEvent.getVehicleId(), linkEnterEvent.getTime());
@@ -137,6 +147,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	// Person<>Vehicle relations and vehicle usage times are tracked
 	@Override
 	public void handleEvent(PersonEntersVehicleEvent event) {
 		vehicleTracking.addDriver2Vehicle(event.getPersonId(), event.getVehicleId(), event.getTime());
@@ -147,7 +158,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		vehicleTracking.registerVehicleLeave(event);
 	}
 
-
+	// LSP Events for Shipments, those are UNTESTED
 	@Override
 	public void handleEvent(ShipmentDeliveredEvent event) {
 		shipmentTracking.trackDeliveryEvent(event);
@@ -158,6 +169,30 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		shipmentTracking.trackPickedUpEvent(event);
 	}
 
+	@Override
+	public void handleEvent(LSPServiceEndEvent event) {
+		serviceTracking.handleEndEvent(event);
+	}
+
+	@Override
+	public void handleEvent(LSPServiceStartEvent event) {
+		serviceTracking.handleStartEvent(event);
+	}
+
+
+
+
+
+
+
+
+
+
+	// ##################################################
+	// Export methods
+
+
+	// Export vehicle Statistics to single TSV
 	public void exportVehicleInfo(String path){
 		exportVehicleInfo(path, false);
 	}
@@ -170,6 +205,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (Id vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				String lastDriverIdString = id2String(tracker.lastDriverId);
+				// if the carrier is not certain, export the guess if that is wanted.
 				String carrierIdString = (tracker.carrierId==null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
 				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
@@ -181,6 +217,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	// Export Vehicle Statistics per Trip to TSV
 	public void exportVehicleTripInfo(String path){
 		exportVehicleTripInfo(path, false );
 	}
@@ -194,6 +231,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
 				for (VehicleTracker.VehicleTrip trip : tracker.tripHistory) {
+					// if info is not certain, export the guess if that is wanted.
 					String driverIdString = trip.driverId == null ? "" : trip.driverId.toString();
 					String carrierIdString = (tracker.carrierId == null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : tracker.carrierId.toString();
 					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
@@ -208,6 +246,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	// Export Vehicle Statistics grouped by VehicleType to individual TSV files per carrier
 	public void exportCarrierInfo(String path, Boolean exportGuesses){
 		//there are no guesses to be exported as of now, still having this method to keep the export calls consistent
 		exportCarrierInfo(path);
@@ -244,6 +283,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	// Export Statistics of performed services
 	public void exportServiceInfo(String path){
 		exportServiceInfo(path, false);
 	}
@@ -255,6 +295,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 			for (ServiceTracker serviceTracker : serviceTracking.getTrackers().values()) {
 				String carrierIdString = id2String(serviceTracker.carrierId);
 				String serviceIdString = id2String(serviceTracker.serviceId);
+				// if info is not certain, export the guess if that is wanted.
 				String driverIdString = (exportGuesses && serviceTracker.driverId == null) ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
 				String vehicleIdString = (vehicleTracking.getDriver2VehicleId(serviceTracker.driverId) == null && exportGuesses) ? "?" + id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverIdGuess)) : id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverId));
 				String arrivalTime = (exportGuesses && serviceTracker.startTime == 0.0) ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.startTime.toString();
@@ -267,37 +308,37 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	//Export Info about Shipments to individual and per-carrier TSV
 	public void exportShipmentInfo(String path){
 		exportShipmentInfo(path, false);
 	}
 	public void exportShipmentInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/shipmentStats.tsv"));
-			singleFile.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
+			singleFile.write("carrierId	shipmentId	driverId	vehicleId	pickupTime	deliveryTime	deliveryDuration	beelineDistance");
 			singleFile.newLine();
 			for (Carrier carrier : carriers.getCarriers().values()) {
 				HashMap<VehicleType, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
 				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/shipments_carrier_" + carrier.getId().toString() + ".tsv"));
-				out.write("carrierId	shipmentId	driverId	vehicleId	onTimePickup	onTimeDelivery	pickupTime	deliveryTime	deliveryDuration");
+				out.write("carrierId	shipmentId	driverId	vehicleId	pickupTime	deliveryTime	deliveryDuration	beelineDistance");
 				out.newLine();
 				for (CarrierShipment shipment : carrier.getShipments().values()) {
 					ShipmentTracker shipmentTracker = shipmentTracking.getShipments().get(shipment.getId());
 					if (shipmentTracker == null) {
 						continue;
 					}
-					Boolean onTimePickup = ((shipment.getPickupTimeWindow().getStart() <= shipmentTracker.pickUpTime) && shipmentTracker.pickUpTime <= shipment.getPickupTimeWindow().getEnd());
-					Boolean onTimeDelivery = ((shipment.getDeliveryTimeWindow().getStart()) <= shipmentTracker.pickUpTime) && (shipmentTracker.deliveryTime <= shipment.getDeliveryTimeWindow().getEnd());
 					Id<Link> from = shipment.getFrom();
 					Id<Link> toLink = shipment.getTo();
+					// if info is not certain, export the guess if that is wanted.
 					String carrierIdString = id2String(carrier.getId());
 					String shipmentIdString = id2String(shipment.getId());
 					String driverIdString = (shipmentTracker.driverId == null && exportGuesses) ? "?" + id2String(shipmentTracker.driverIdGuess) : id2String(shipmentTracker.driverId);
 					String vehicleIdString = (vehicleTracking.getDriver2VehicleId(shipmentTracker.driverId) == null && exportGuesses) ? "?" + id2String(vehicleTracking.getDriver2VehicleId(shipmentTracker.driverIdGuess)) : id2String(vehicleTracking.getDriver2VehicleId(shipmentTracker.driverId));
-
+					// calculate euclidean Distance between from and to for comparsion
 					double dist = NetworkUtils.getEuclideanDistance(network.getLinks().get(from).getCoord(), network.getLinks().get(toLink).getCoord());
-					out.write(carrierIdString + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleIdString + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
+					out.write(carrierIdString + "	" + shipment.getId().toString() + "	" + driverIdString + "	" + vehicleIdString + "	"  + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + "	" +dist);
 					out.newLine();
-					singleFile.write(carrierIdString + "	" + shipmentIdString + "	" + driverIdString + "	" + vehicleIdString + "	" + onTimePickup.toString() + "	" + onTimeDelivery.toString() + "	" + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + dist);
+					singleFile.write(carrierIdString + "	" + shipmentIdString + "	" + driverIdString + "	" + vehicleIdString + "	"  + shipmentTracker.pickUpTime.toString() + "	" + shipmentTracker.deliveryTime.toString() + "	" + shipmentTracker.deliveryDuration.toString() + "	" + dist);
 					singleFile.newLine();
 				}
 				out.close();
@@ -309,17 +350,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 	}
 	private String id2String(Id id){ //Failsafe Id to String - Converter, because Id.toString() throws Exception if the Id is null.
-		return id==null?" ":id.toString();
-	}
-
-	@Override
-	public void handleEvent(LSPServiceEndEvent event) {
-		serviceTracking.handleEndEvent(event);
-	}
-
-	@Override
-	public void handleEvent(LSPServiceStartEvent event) {
-		serviceTracking.handleStartEvent(event);
+		return id==null?" ":id.toString(); // return space because instead of empty string because TSV files get confused otherwise
 	}
 
 

@@ -31,6 +31,7 @@ public class VehicleTracker {
 		this.vehicleType = vehicle.getType();
 	}
 
+	// sub.class for storing  the info about single vehicle trips
 	static class VehicleTrip {
 		Id<Person> driverId ;
 		Double travelTime = 0.0;

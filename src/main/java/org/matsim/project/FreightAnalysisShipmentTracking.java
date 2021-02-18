@@ -13,28 +13,11 @@ public class FreightAnalysisShipmentTracking {
     public void addTracker(CarrierShipment shipment){
         shipments.put(shipment.getId(),new ShipmentTracker(shipment) );
     }
-
-    public void trackPickedUpEvent(ShipmentPickedUpEvent event) {
-        CarrierShipment shipment = event.getShipment();
-        if (!shipments.containsKey(shipment.getId())){
-            addTracker(shipment);
-        }
-        shipments.get(shipment.getId()).pickUpTime=event.getTime();
-        shipments.get(shipment.getId()).driverId=event.getDriverId();
-    }
-
-
-	public void trackDeliveryEvent(ShipmentDeliveredEvent event) {
-    	if (shipments.containsKey(event.getShipment().getId())){
-			ShipmentTracker shipmentTracker = shipments.get(event.getShipment().getId());
-    	    shipmentTracker.deliveryTime=event.getTime();
-			shipmentTracker.deliveryDuration += shipmentTracker.deliveryDuration + (event.getTime() - shipmentTracker.pickUpTime);
-        }
-    }
 	public HashMap<Id<CarrierShipment>, ShipmentTracker> getShipments() {
 		return shipments;
 	}
 
+	// tracking Shipments based on Guesses the same way as Services are tracked, and also with the same issues.
 	public void trackDeliveryActivity(ActivityStartEvent activityStartEvent) {
     	for (ShipmentTracker shipment: shipments.values()){
     		if (shipment.to==activityStartEvent.getLinkId() ){
@@ -52,6 +35,7 @@ public class FreightAnalysisShipmentTracking {
 		}
 	}
 
+	// for improving the guess, we track the pickup activities aswell to narrow down the selection of drivers on those that could have picked up the shipment when we later on try to match the delivery activity.
 	public void trackPickupActivity(ActivityStartEvent activityStartEvent) {
     	for (ShipmentTracker shipmentTracker: shipments.values()){
     		if (shipmentTracker.from==activityStartEvent.getLinkId()){
@@ -61,6 +45,24 @@ public class FreightAnalysisShipmentTracking {
 					}
 				}
 			}
+		}
+	}
+// untested LSP Event handling for precise Shipment Tracking
+	public void trackPickedUpEvent(ShipmentPickedUpEvent event) {
+		CarrierShipment shipment = event.getShipment();
+		if (!shipments.containsKey(shipment.getId())){
+			addTracker(shipment);
+		}
+		shipments.get(shipment.getId()).pickUpTime=event.getTime();
+		shipments.get(shipment.getId()).driverId=event.getDriverId();
+	}
+
+
+	public void trackDeliveryEvent(ShipmentDeliveredEvent event) {
+		if (shipments.containsKey(event.getShipment().getId())){
+			ShipmentTracker shipmentTracker = shipments.get(event.getShipment().getId());
+			shipmentTracker.deliveryTime=event.getTime();
+			shipmentTracker.deliveryDuration +=  (event.getTime() - shipmentTracker.pickUpTime);
 		}
 	}
 }
