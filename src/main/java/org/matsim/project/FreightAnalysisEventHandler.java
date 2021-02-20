@@ -24,6 +24,7 @@ import org.matsim.vehicles.Vehicles;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
@@ -98,9 +99,9 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 					if (tourElement instanceof Tour.ServiceActivity) {
 						Tour.ServiceActivity serviceAct = (Tour.ServiceActivity) tourElement;
 							Id<CarrierService> serviceId = serviceAct.getService().getId();
-						serviceTracking.setExpectedArrival(serviceId, serviceAct.getExpectedArrival());
+						serviceTracking.setExpectedArrival(carrier.getId(),serviceId, serviceAct.getExpectedArrival());
 						if (calculatedArrivalTime > 0.0) {
-							serviceTracking.setCalculatedArrival(serviceId, calculatedArrivalTime);
+							serviceTracking.setCalculatedArrival(carrier.getId(),serviceId, calculatedArrivalTime);
 							calculatedArrivalTime = 0.0;
 						}
 					}
@@ -300,17 +301,24 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public void exportServiceInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
-			out.write("carrierId	serviceId	driverId	vehicleId	ServiceETA	TourETA ArrivalTime");
+			out.write("carrierId	serviceId	driverId	vehicleId	ServiceETA	TourETA 	ArrivalTime");
 			out.newLine();
-			for (ServiceTracker serviceTracker : serviceTracking.getTrackers().values()) {
-				String carrierIdString = id2String(serviceTracker.carrierId);
-				String serviceIdString = id2String(serviceTracker.serviceId);
-				// if info is not certain, export the guess if that is wanted.
-				String driverIdString = (exportGuesses && serviceTracker.driverId == null) ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
-				String vehicleIdString = (vehicleTracking.getDriver2VehicleId(serviceTracker.driverId) == null && exportGuesses) ? "?" + id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverIdGuess)) : id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverId));
-				String arrivalTime = (exportGuesses && serviceTracker.startTime == 0.0) ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.startTime.toString();
-				out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + vehicleIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + arrivalTime);
-				out.newLine();
+			HashMap<Id<Carrier>, ServiceTracker.CarrierServiceTracker> carrierServiceTrackers= serviceTracking.getCarrierServiceTrackers();
+			for(ServiceTracker.CarrierServiceTracker carrierServiceTracker:carrierServiceTrackers.values()){
+				String carrierIdString = id2String(carrierServiceTracker.carrierId);
+				BufferedWriter out_carrier = new BufferedWriter(new FileWriter(path+"/carrier_" + carrierIdString + "_ServiceStats.tsv"));
+				for (ServiceTracker serviceTracker : carrierServiceTracker.serviceTrackers.values()){
+					String serviceIdString = id2String(serviceTracker.service.getId());
+					// if info is not certain, export the guess if that is wanted.
+					String driverIdString = (exportGuesses && serviceTracker.driverId == null) ? "?" + id2String(serviceTracker.driverIdGuess) : id2String(serviceTracker.driverId);
+					String vehicleIdString = (vehicleTracking.getDriver2VehicleId(serviceTracker.driverId) == null && exportGuesses) ? "?" + id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverIdGuess)) : id2String(vehicleTracking.getDriver2VehicleId(serviceTracker.driverId));
+					String arrivalTime = (exportGuesses && serviceTracker.startTime == 0.0) ? "?" + serviceTracker.arrivalTimeGuess.toString() : serviceTracker.startTime.toString();
+					out.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + vehicleIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + arrivalTime);
+					out_carrier.write(carrierIdString + "	" + serviceIdString + "	" + driverIdString + "	" + vehicleIdString + "	" + serviceTracker.expectedArrival + "	" + serviceTracker.calculatedArrival + "	" + arrivalTime);
+					out.newLine();
+					out_carrier.newLine();
+				}
+				out_carrier.close();
 			}
 			out.close();
 		} catch (IOException e) {

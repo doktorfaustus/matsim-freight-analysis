@@ -9,20 +9,46 @@ output:
 # Dokument
 ```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyverse)
-vehicleStats <- read_tsv("freightOutput/freightVehicleStats.tsv") %>% mutate(travelDistance=travelDistance/1000)
-tripStats <- read_tsv("freightOutput/freightVehicleTripStats.tsv")
-serviceStats <- read_tsv("freightOutput/serviceStats.tsv")
-shipmentStats <- read_tsv("freightOutput/shipmentStats.tsv")
+library(pracma)
+library(sjmisc)
+
+chessvehicleStats <- read_tsv("../Dokumentation/output_chessboard/freightVehicleStats.tsv") %>% mutate(travelDistance=travelDistance/1000)
+chesscarrierStats <- read_tsv("../Dokumentation/output_chessboard/carrierStats.tsv")
+chesstripStats <- read_tsv("../Dokumentation/output_chessboard/freightVehicleTripStats.tsv")
+chessserviceStats <- read_tsv("../Dokumentation/output_chessboard/serviceStats.tsv")
+chessshipmentStats <- read_tsv("../Dokumentation/output_chessboard/shipmentStats.tsv")
+
+KMTvehicleStats <- read_tsv("../Dokumentation/output_KMT/freightVehicleStats.tsv") %>% mutate(travelDistance=travelDistance/1000)
+KMTcarrierStats <- read_tsv("../Dokumentation/output_KMT/carrierStats.tsv")
+KMTtripStats <- read_tsv("../Dokumentation/output_KMT/freightVehicleTripStats.tsv")
+KMTserviceStats <- read_tsv("../Dokumentation/output_KMT/serviceStats.tsv")
+KMTshipmentStats <- read_tsv("../Dokumentation/output_KMT/shipmentStats.tsv")
 ```
+
 ## Comparison of VehicleTypes
 electro vehicles unsurprisingly have a short range
 
 ```{r fig.cap ="travelDistance distribution of vehicle types", echo=FALSE, warning=FALSE}
-ggplot(data=vehicleStats, aes(travelDistance, color=VehicleType))+
-  geom_density()+
-  facet_wrap("VehicleType")
+ggplot(KMTvehicleStats)+
+  geom_point(mapping=aes(x=usageTime, y=roadTime))
+
+ggplot(KMTvehicleStats)+
+  facet_wrap(vars(VehicleType))+
+  geom_histogram(mapping=aes(x=legCount))
 ```
  
+## Carrier export
+```{r}
+time_chessserviceStats <- chessserviceStats %>% mutate(ArrivalTime=as.numeric(substr(ArrivalTime, 2, length(ArrivalTime))))
+  
+# how good are guesses?
+ggplot(time_chessserviceStats)+
+  geom_point(mapping=aes(x=ArrivalTime, y=TourETA))
+
+# tagesganglinie
+ggplot(time_chessserviceStats)+
+  geom_histogram(mapping=aes(x=TourETA))
+```
  
  
  
