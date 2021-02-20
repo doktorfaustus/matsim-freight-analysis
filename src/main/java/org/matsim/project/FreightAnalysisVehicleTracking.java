@@ -8,6 +8,7 @@ import org.matsim.vehicles.Vehicle;
 import org.matsim.vehicles.VehicleType;
 
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class FreightAnalysisVehicleTracking {
 
@@ -42,7 +43,7 @@ public class FreightAnalysisVehicleTracking {
 			tracker.emptyTime = tracker.emptyTime + (-travelTime);
 		} else {
 			tracker.travelDistance = tracker.travelDistance + travelDistance;
-			tracker.travelTime = tracker.travelTime + (-travelTime);
+			tracker.roadTime = tracker.roadTime + (-travelTime);
 		}
 	}
 
@@ -58,7 +59,7 @@ public class FreightAnalysisVehicleTracking {
 					//TODO: Warning that driver changed unexpectedly as this wrongs the service duration because the end of the previous service is obviously not known.
 				}
 				trackers.get(vehicleId).currentDriverId = personId;
-				trackers.get(vehicleId).usageStartStime = time;
+				trackers.get(vehicleId).usageStartTime = time;
 				driver2VehicleId.put(personId, vehicleId);
 			}
 		}
@@ -73,14 +74,16 @@ public class FreightAnalysisVehicleTracking {
 
 	// register a guess for a carrier of a vehicle.
 	public void addCarrierGuess(Id<Vehicle> id, Id<Carrier> carrierGuess) {
-		trackers.get(id).carrierIdGuess = carrierGuess;
+		if (trackers.containsKey(id)) {
+			trackers.get(id).carrierIdGuess = carrierGuess;
+		}
 	}
 
 	// when a person that could've been a driver throws a "end" Event, it is assumed that they have stopped using the vehicle. The service time is updated, the currentDriver reset.
 	public void endVehicleUsage(Id<Person> personId) {
 		if (driver2VehicleId.containsKey(personId)){
 			VehicleTracker tracker = trackers.get(driver2VehicleId.get(personId));
-			tracker.serviceTime += tracker.lastExit- tracker.usageStartStime;
+			tracker.usageTime += tracker.lastExit- tracker.usageStartTime;
 			tracker.currentDriverId =null;
 			tracker.lastDriverId=personId;
 			tracker.driverHistory.add(personId);
@@ -103,5 +106,43 @@ public class FreightAnalysisVehicleTracking {
 	private double calculateCost(VehicleType vehicleType, Double distance, Double time){
 		return(distance * vehicleType.getCostInformation().getCostsPerMeter()
 				+  time * vehicleType.getCostInformation().getCostsPerSecond());
+	}
+}
+class VehicleTracker {
+	public double lastExit;
+	public Id<Person> lastDriverId = Id.createPersonId(-1);
+	public HashSet<Id<Person>> driverHistory=new HashSet<>();
+	public HashSet<VehicleTrip> tripHistory= new HashSet<>();
+	public double currentTripDuration;
+	public double currentTripDistance;
+	public Id<Carrier> carrierIdGuess;
+	VehicleType vehicleType;
+	Double roadTime = 0.0;
+	Double usageTime = 0.0;
+	Double travelDistance = 0.0;
+	Double emptyTime = 0.0;
+	Double emptyDistance = 0.0;
+	Id<Carrier> carrierId;
+	Double cost = 0.0;
+	Id<Person> currentDriverId;
+	Double usageStartTime = 0.0;
+
+	public VehicleTracker(Vehicle vehicle) {
+		this.vehicleType = vehicle.getType();
+	}
+
+	// sub.class for storing  the info about single vehicle trips
+	static class VehicleTrip {
+		Id<Person> driverId ;
+		Double travelTime;
+		Double travelDistance;
+		Double cost;
+
+		public VehicleTrip(Id<Person> currentDriverId, double currentTripDistance, double currentTripDuration, double cost) {
+			this.driverId = currentDriverId;
+			this.travelDistance = currentTripDistance;
+			this.travelTime = currentTripDuration;
+			this.cost = cost;
+		}
 	}
 }

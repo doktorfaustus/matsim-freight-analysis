@@ -1,6 +1,7 @@
 package org.matsim.project;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.ActivityStartEvent;
+import org.matsim.api.core.v01.population.Person;
 import org.matsim.contrib.freight.carrier.Carrier;
 import org.matsim.contrib.freight.carrier.CarrierService;
 import org.matsim.contrib.freight.events.LSPServiceEndEvent;
@@ -43,22 +44,48 @@ public class FreightAnalysisServiceTracking {
 	}
 
 	public void setExpectedArrival(Id<CarrierService> serviceId, double expectedArrival) {
-		trackers.get(serviceId).expectedArrival=expectedArrival;
+		if (trackers.containsKey(serviceId)) {
+			trackers.get(serviceId).expectedArrival = expectedArrival;
+		}
 	}
 
 	public void setCalculatedArrival(Id<CarrierService> serviceId, Double calculatedArrivalTime) {
-		trackers.get(serviceId).calculatedArrival=calculatedArrivalTime;
+		if (trackers.containsKey(serviceId)){
+			trackers.get(serviceId).calculatedArrival=calculatedArrivalTime;
+		}
 	}
 
 	// UNTESTED handling of LSP Service events that provied reliable info about driver and timestamps.
 	public void handleStartEvent(LSPServiceStartEvent event) {
-		ServiceTracker service = trackers.get(event.getService().getId());
-		service.driverId = event.getDriverId();
-		service.startTime = event.getTime();
+		if (trackers.containsKey(event.getService().getId())) {
+			ServiceTracker service = trackers.get(event.getService().getId());
+			service.driverId = event.getDriverId();
+			service.startTime = event.getTime();
+		}
 	}
 	public void handleEndEvent(LSPServiceEndEvent event) {
-		ServiceTracker service = trackers.get(event.getService().getId());
-		service.endTime = event.getTime();
+		if (trackers.containsKey(event.getService().getId())) {
+			ServiceTracker service = trackers.get(event.getService().getId());
+			service.endTime = event.getTime();
+		}
 	}
 
+}
+
+class ServiceTracker {
+	public CarrierService service;
+	public Id<CarrierService> serviceId;
+	public Double calculatedArrival =0.0;
+	public Id<Carrier> carrierId ;
+	public Id<Person> driverId ;
+	public Double startTime =0.0;
+	public Id<Person> driverIdGuess;
+	public Double arrivalTimeGuess = 0.0;
+	public double expectedArrival = 0.0;
+	public double endTime;
+
+	public ServiceTracker(CarrierService service) {
+		this.serviceId=service.getId();
+		this.service=service;
+	}
 }
