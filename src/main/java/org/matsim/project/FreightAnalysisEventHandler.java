@@ -199,7 +199,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public void exportVehicleInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleStats.tsv"));
-			out.write("VehicleId	VehicleType	CarrierId	DriverID	serviceTime	roadTime	travelDistance	vehicleCost	legCount");
+			out.write("VehicleId	VehicleType	CarrierId	DriverID	usageTime	roadTime	travelDistance	vehicleCost	legCount");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = vehicleTracking.getTrackers();
 			for (Id vehId : trackers.keySet()) {
@@ -207,7 +207,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				String lastDriverIdString = id2String(tracker.lastDriverId);
 				// if the carrier is not certain, export the guess if that is wanted.
 				String carrierIdString = (tracker.carrierId==null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
-				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.serviceTime.toString() + "	" + tracker.travelTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
+				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.usageTime.toString() + "	" + tracker.roadTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
 				out.newLine();
 			}
 			out.close();
@@ -247,39 +247,49 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	}
 
 	// Export Vehicle Statistics grouped by VehicleType to individual TSV files per carrier
-	public void exportCarrierInfo(String path, Boolean exportGuesses){
+	public void exportCarrierInfo(String path){
 		//there are no guesses to be exported as of now, still having this method to keep the export calls consistent
-		exportCarrierInfo(path);
+		exportCarrierInfo(path, false);
 	}
-	public void exportCarrierInfo(String path) {
-		for (Carrier carrier : carriers.getCarriers().values()) {
-			HashMap<VehicleType, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
-			try {
+	public void exportCarrierInfo(String path, Boolean exportGuesses) {
+		try {
+			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/carrierStats.tsv"));
+			singleFile.write("carrierId	vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
+			singleFile.newLine();
+			for (Carrier carrier : carriers.getCarriers().values()) {
+			HashMap<String, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
 				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
 				for (VehicleTracker tracker : vehicleTracking.getTrackers().values()) {
-					if (id2String(tracker.carrierId).equals(id2String(carrier.getId()))) {
-						if (!vehicleTypeStatsMap.containsKey(tracker.vehicleType)) {
-							vehicleTypeStatsMap.put(tracker.vehicleType, new CarrierVehicleTypeStats());
+					// if desired get carrierIdString, in which case the vehicleType gets the "?" prefix to separate guessed vehicle connections from non-guessed ones, even if they are of the same vehicle type
+					String carrierIdString = tracker.carrierId==null && exportGuesses ? id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
+					String vehicleTypeString = tracker.carrierId==null && exportGuesses ? "?" + tracker.vehicleType.getId().toString() : tracker.vehicleType.getId().toString();
+
+					if (carrierIdString.equals(id2String(carrier.getId()))) {
+						if (!vehicleTypeStatsMap.containsKey(vehicleTypeString)) {
+							vehicleTypeStatsMap.put(vehicleTypeString, new CarrierVehicleTypeStats());
 						}
-						CarrierVehicleTypeStats cVtStTr = vehicleTypeStatsMap.get(tracker.vehicleType);
+						CarrierVehicleTypeStats cVtStTr = vehicleTypeStatsMap.get(vehicleTypeString);
 						cVtStTr.vehicleCount++;
 						cVtStTr.totalCost += tracker.cost;
 						cVtStTr.totalDistance += tracker.travelDistance;
-						cVtStTr.totalRoadTime += tracker.travelTime;
-						cVtStTr.totalServiceTime += tracker.serviceTime;
+						cVtStTr.totalRoadTime += tracker.roadTime;
+						cVtStTr.totalServiceTime += tracker.usageTime;
 					}
 				}
-				out.write("vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
-				out.newLine();
-				for (VehicleType vt : vehicleTypeStatsMap.keySet()) {
+			out.write("carrierId	vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
+			out.newLine();
+				for (String vt : vehicleTypeStatsMap.keySet()) {
 					CarrierVehicleTypeStats vts = vehicleTypeStatsMap.get(vt);
-					out.write(vt.getId().toString() + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime + "	" + vts.totalRoadTime + "	" + vts.totalCost);
+					out.write(carrier.getId().toString() +"	" + vt + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime + "	" + vts.totalRoadTime + "	" + vts.totalCost);
+					singleFile.write(carrier.getId().toString() + "	" + vt + "	" + vts.vehicleCount.toString() + "	" + vts.totalDistance.toString() + "	" + vts.totalServiceTime + "	" + vts.totalRoadTime + "	" + vts.totalCost);
 					out.newLine();
+					singleFile.newLine();
 				}
 				out.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+		}
+			singleFile.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -290,7 +300,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public void exportServiceInfo(String path, Boolean exportGuesses) {
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
-			out.write("carrierID	serviceId	driverId	vehicleId	ServiceETA	TourETA ArrivalTime");
+			out.write("carrierId	serviceId	driverId	vehicleId	ServiceETA	TourETA ArrivalTime");
 			out.newLine();
 			for (ServiceTracker serviceTracker : serviceTracking.getTrackers().values()) {
 				String carrierIdString = id2String(serviceTracker.carrierId);
