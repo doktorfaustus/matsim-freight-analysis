@@ -138,6 +138,9 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	@Override
 	public void handleEvent(ShipmentPickedUpEvent event) {
 		shipmentTracking.trackPickedUpEvent(event);
+		if (shipmentTracking.getShipments().containsKey(event.getShipment().getId()) && vehicleTracking.getDriver2VehicleId(event.getDriverId())!=null){
+			vehicleTracking.addCarrier2Vehicle(vehicleTracking.getDriver2VehicleId(event.getDriverId()), shipmentTracking.getShipments().get(event.getShipment()).carrierId);
+		}
 	}
 
 	@Override
@@ -148,6 +151,9 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	@Override
 	public void handleEvent(LSPServiceStartEvent event) {
 		serviceTracking.handleStartEvent(event);
+		if (shipmentTracking.getShipments().containsKey(event.getService().getId()) && vehicleTracking.getDriver2VehicleId(event.getDriverId())!=null){
+			vehicleTracking.addCarrier2Vehicle(vehicleTracking.getDriver2VehicleId(event.getDriverId()), shipmentTracking.getShipments().get(event.getService()).carrierId);
+		}
 	}
 
 
