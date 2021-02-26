@@ -23,5 +23,5 @@
 hs_err_pid*
 .idea
 ./freightOutput/*
-./output/*
+output/*
 ./output100/*
