@@ -25,8 +25,6 @@ public class RunFreightAnalysis {
     private void runAnalysis(String basePath){//Dateipfade uebergeben lassen
        File networkFile = new File(basePath + "/output_network.xml.gz");
        File carrierFile = new File(basePath + "/output_carriers.xml");
-       //File carrierFile = new File(basePath + "/carrierReadtest.xml");
-       File vehicleTypeFile = new File(basePath + "/output_VehicleTypes.xml.gz");
        File vehiclesFile = new File(basePath + "/output_allVehicles.xml.gz");
        File eventsFile = new File(basePath + "/output_events.xml.gz");
 

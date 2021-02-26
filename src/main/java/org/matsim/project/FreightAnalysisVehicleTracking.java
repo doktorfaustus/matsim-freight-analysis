@@ -129,6 +129,8 @@ class VehicleTracker {
 
 	public VehicleTracker(Vehicle vehicle) {
 		this.vehicleType = vehicle.getType();
+		// instantiate with fixed daily costs of vehicle:
+		this.cost=vehicleType.getCostInformation().getFixedCosts();
 	}
 
 	// sub.class for storing  the info about single vehicle trips

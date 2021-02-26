@@ -2,8 +2,7 @@ package org.matsim.project;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.events.ActivityStartEvent;
 import org.matsim.api.core.v01.population.Person;
-import org.matsim.contrib.freight.carrier.Carrier;
-import org.matsim.contrib.freight.carrier.CarrierService;
+import org.matsim.contrib.freight.carrier.*;
 import org.matsim.contrib.freight.events.LSPServiceEndEvent;
 import org.matsim.contrib.freight.events.LSPServiceStartEvent;
 
@@ -87,6 +86,28 @@ public class FreightAnalysisServiceTracking {
 		}
 	}
 
+	// Method that estimates Arrival Times based on the expected leg departure and travel times to measure punctuality.
+	public void estimateArrivalTimes(Carriers carriers) {
+		for (Carrier carrier: carriers.getCarriers().values()){
+			for (ScheduledTour tour : carrier.getSelectedPlan().getScheduledTours()) {
+				Double calculatedArrivalTime = 0.0;
+				for (Tour.TourElement tourElement : tour.getTour().getTourElements()) {
+					if (tourElement instanceof Tour.Leg) {
+						calculatedArrivalTime = ((Tour.Leg) tourElement).getExpectedDepartureTime() + ((Tour.Leg) tourElement).getExpectedTransportTime();
+					}
+					if (tourElement instanceof Tour.ServiceActivity) {
+						Tour.ServiceActivity serviceAct = (Tour.ServiceActivity) tourElement;
+						Id<CarrierService> serviceId = serviceAct.getService().getId();
+						setExpectedArrival(carrier.getId(),serviceId, serviceAct.getExpectedArrival());
+						if (calculatedArrivalTime > 0.0) {
+							setCalculatedArrival(carrier.getId(),serviceId, calculatedArrivalTime);
+							calculatedArrivalTime = 0.0;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 class ServiceTracker {
