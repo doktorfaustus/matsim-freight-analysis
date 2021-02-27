@@ -1,59 +1,45 @@
-# Table of Contents
-
-1.  [Collecting data](#orgef9d34b)
-    1.  [Running with the simulation](#org2d6d975)
-    2.  [Running on simulation output](#org911123b)
-2.  [Exporting data](#org318b39a)
-    1.  [Output format](#orga67d0e6)
-3.  [Limitations](#org636dc44)
+# matsim-freight-analysis
 
 matsim-freight-analysis provides basic functionality for generating basic statistics about vehicles, carriers, shipments and services in matsim runs.
 
 
-<a id="orgef9d34b"></a>
 
-# Collecting data
+## Collecting data
+matsim-freight-analysis can be used during or after matsim runs.
 
-
-<a id="org2d6d975"></a>
-
-## Running with the simulation
+### Running with the simulation
 
 Add the EventHandler to your MATSim controller in your desired way. MATSim-freight-analyis will then by default collect data about all freight vehicles, carriers, shipments and services.
 
 
 <a id="org911123b"></a>
 
-## Running on simulation output
+### Running on simulation output
+Create the EventHandler and use a MATSim Events Reader to read the Events file into it. MATSim-freight-analyis will then by default collect data about all freight vehicles, carriers, shipments and services.
 
-Prerequisites:
+#### Prerequisites:
 
 1.  Events file
 2.  allVehicles file
 3.  Carrier file
-4.  Network file (optional)
+4.  Network file
 
-Create the EventHandler and use a MATSim Events Reader to read the Events file into it. MATSim-freight-analyis will then by default collect data about all freight vehicles, carriers, shipments and services.
-
-
-<a id="org318b39a"></a>
-
-# Exporting data
+## Exporting data
 
 To export the collected data, call one of the export methods provided by the EventsHandler:
 
-    freightEventHandler.exportVehicleInfo(outputPath, exportGuesses)
-    freightEventHandler.exportVehicleTripInfo(outputPath, exportGuesses)
-    freightEventHandler.exportCarrierInfo(outputPath, exportGuesses)
-    freightEventHandler.exportServiceInfo(outputPath, exportGuesses)
-    freightEventHandler.exportShipmentInfo(outputPath, exportGuesses)
+    exportVehicleInfo(outputPath, exportGuesses)
+    exportVehicleTripInfo(outputPath, exportGuesses)
+    exportCarrierInfo(outputPath, exportGuesses)
+    exportServiceInfo(outputPath, exportGuesses)
+    exportShipmentInfo(outputPath, exportGuesses)
 
 You can specify the output directory and whether the output should include guesses (see Limitations).
 
 
 <a id="orga67d0e6"></a>
 
-## Output format
+### Output format
 
 Files are exported as .tsv (tab-separated-values). The first row contains a description of the columns contents. Carrier, shipment and service info are exported to single files for further analysis (e.g. with R) and to separate files grouped by carriers for fast manual evaluation.
 Guesses are preceeded by "?". Data dependent from the guess (e.g. travel time of a guessed vehicle) are not preceeded by another "?", if they aren't a guess as well. 
@@ -61,9 +47,9 @@ Guesses are preceeded by "?". Data dependent from the guess (e.g. travel time of
 
 <a id="org636dc44"></a>
 
-# Limitations
+## Limitations
 
-Several Limitations exist:
+Several Limitations still exist:
 
 1.  Whether a vehicle is a freight vehicle is determined by the whether the vehicle Id contains the String "freight" or not. This works for default configurations of matsim-freight, but can break easily in different setups or future versions of MATSim freight.
 2.  By now, all functionality matching objects from the jsprit side (carriers, shipments and services) to the MATSim side (vehicles or drivers) rely on educated guesses whose quality heavily depends on the individual scenario. The lesser correlation of time windows and links for shipments and services, the better the guesses will be.
