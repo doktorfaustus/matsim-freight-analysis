@@ -1,12 +1,13 @@
 ---
 title: "MATSim-freight"
 output:
-  pdf_document: default
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 # Dokument
+
 ```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyverse)
 library(pracma)
@@ -25,29 +26,66 @@ KMTserviceStats <- read_tsv("../Dokumentation/output_KMT/serviceStats.tsv")
 KMTshipmentStats <- read_tsv("../Dokumentation/output_KMT/shipmentStats.tsv")
 ```
 
-## Comparison of VehicleTypes
-electro vehicles unsurprisingly have a short range
+## Comparison of "VehicleTypes
+### Travel Distance of "heavy" vehicles
+
+```{r}
+KMTvehicleStats %>% filter(grepl("heavy", VehicleType)) %>% 
+                             ggplot()+
+                            geom_density(mapping=aes(x=travelDistance, group=VehicleType, fill=VehicleType), alpha=0.5)
+```
+### Are there significantly different loading/unloading times for vehicles?
 
 ```{r fig.cap ="travelDistance distribution of vehicle types", echo=FALSE, warning=FALSE}
 ggplot(KMTvehicleStats)+
   geom_point(mapping=aes(x=usageTime, y=roadTime))
-
-ggplot(KMTvehicleStats)+
-  facet_wrap(vars(VehicleType))+
-  geom_histogram(mapping=aes(x=legCount))
 ```
- 
-## Carrier export
+
+### Do retail chains have similar delivery strategies?
+
+```{r fig.cap ="travelDistance distribution of vehicle types", echo=FALSE, warning=FALSE}
+### leg Count density of "TROCKEN" carriers
+KMTvehicleStats %>% filter(grepl("TROCKEN", CarrierId)) %>% ggplot()+
+  facet_wrap(vars(CarrierId))+
+  geom_density(mapping=aes(x=legCount))
+```
+
+## Shipment export
+### Economy of Scale: Cost per shipment for carriers
+
 ```{r}
 time_chessserviceStats <- chessserviceStats %>% mutate(ArrivalTime=as.numeric(substr(ArrivalTime, 2, length(ArrivalTime))))
+
+carriercost <- KMTcarrierStats  %>% group_by(carrierId) %>% summarise(Cost=sum(totalCost)) %>% select(carrierId, Cost)
+
+shipmentcount <- KMTshipmentStats %>% group_by(carrierId) %>% summarise(count=n()) 
   
+out <- carriercost  %>% inner_join(shipmentcount, by = "carrierId") %>% mutate(costPerShipment=count/-Cost)
+
+ggplot(out)+
+  geom_point(mapping=aes(x=count, y=costPerShipment))+
+  labs(x="Shipment Count of Carrier", y="Cost per Shipment")
+```
+
+### Distance shipments are travelling (~ hub density)
+
+```{r}
+KMTshipmentStats %>% filter(grepl("TROCKEN", carrierId)) %>% 
+  ggplot() + 
+  facet_wrap(vars(carrierId))+
+  geom_density(mapping=aes(x=beelineDistance))
+```
+
+### Services from the chessboard-example
+
+```{r}
 # how good are guesses?
 ggplot(time_chessserviceStats)+
   geom_point(mapping=aes(x=ArrivalTime, y=TourETA))
 
 # tagesganglinie
 ggplot(time_chessserviceStats)+
-  geom_histogram(mapping=aes(x=TourETA))
+  geom_density(mapping=aes(x=TourETA))+labs(x="Estimated Arrival Time")
 ```
  
  

@@ -33,6 +33,7 @@ import org.apache.log4j.Logger;
 
 public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, LinkEnterEventHandler, LinkLeaveEventHandler, PersonEntersVehicleEventHandler, PersonLeavesVehicleEventHandler, ShipmentPickedUpEventHandler, ShipmentDeliveredEventHandler, LSPServiceStartEventHandler, LSPServiceEndEventHandler {
 	private final static Logger log = Logger.getLogger(FreightAnalysisEventHandler.class);
+	private final Vehicles vehicles;
 	private Network network;
 	private Carriers carriers;
 	HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap<>();
@@ -43,7 +44,12 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
 		this.network = network;
 		this.carriers = carriers;
+		this.vehicles = vehicles;
+		this.init();
+	}
 
+	// create all trackers and estimate deliveryTimes
+	private void init(){
 		// the EventHandler tracks all vehicles containing "freight" by default which is as of now (02/21) the easiest way to do so, but not a pretty one.
 		// You can add trackers by yourself at will.
 		for (Vehicle vehicle : vehicles.getVehicles().values()) {
@@ -337,6 +343,16 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 
 	}
+
+	// reset the EventHandler, would typically be done between iterations of a simulation
+	public void reset(){
+		this.vehiclesOnLink = new HashMap<>();
+		this.vehicleTracking = new FreightAnalysisVehicleTracking();
+		this.shipmentTracking = new FreightAnalysisShipmentTracking();
+		this.serviceTracking = new FreightAnalysisServiceTracking();
+		init();
+	}
+	
 	private String id2String(Id id){ //Failsafe Id to String - Converter, because Id.toString() throws Exception if the Id is null.
 		return id==null?" ":id.toString(); // return space because instead of empty string because TSV files get confused otherwise
 	}
