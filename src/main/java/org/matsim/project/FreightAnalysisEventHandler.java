@@ -305,15 +305,6 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
-	private String getIterationDirectory(String parentDirectory) {
-		String path = parentDirectory + "/it_" + iterationCount.toString(); // create one subfolder per iteration
-		try {
-			Files.createDirectories(Paths.get(path));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		return(path);
-	}
 
 	// Export Statistics of performed services
 	public void exportServiceInfo(String path){
@@ -392,6 +383,15 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 	}
 
+	private String getIterationDirectory(String parentDirectory) {
+		String path = parentDirectory + "/freight-analysis-it_" + iterationCount.toString(); // create one subfolder per iteration
+		try {
+			Files.createDirectories(Paths.get(path));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return(path);
+	}
 	// reset the EventHandler, would typically be done between iterations of a simulation
 	public void reset(){
 		iterationCount++;
