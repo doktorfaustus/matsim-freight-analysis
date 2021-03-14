@@ -31,6 +31,9 @@ import org.matsim.core.scoring.ScoringFunction;
 import org.matsim.core.scoring.SumScoringFunction;
 import org.matsim.core.utils.io.IOUtils;
 import org.matsim.examples.ExamplesUtils;
+import org.matsim.vehicles.MatsimVehicleReader;
+import org.matsim.vehicles.VehicleUtils;
+import org.matsim.vehicles.Vehicles;
 
 import javax.inject.Inject;
 import java.io.File;
@@ -38,13 +41,20 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Map;
 
-public final class RunChessboard {
+public final class RunChessboardWithFreight {
+
+    /**
+     * This class is based on the RunChessboard file from the matsim freight contrib, to be found here:
+     *
+     * https://github.com/matsim-org/matsim-libs/blob/master/contribs/freight/src/main/java/org/matsim/contrib/freight/usecases/chessboard/RunChessboard.java
+     */
 
     private Config config ;
     private Scenario scenario ;
+    private FreightAnalysisEventHandler faeh;
 
     public static void main(String[] args){
-        new RunChessboard().run();
+        new RunChessboardWithFreight().run();
     }
 
     public void run() {
@@ -55,8 +65,7 @@ public final class RunChessboard {
         if ( scenario==null ) {
             prepareScenario() ;
         }
-
-        Carriers carriers = FreightUtils.addOrGetCarriers(scenario );
+        Carriers carriers = FreightUtils.addOrGetCarriers(scenario);
         CarrierVehicleTypes types = FreightUtils.getCarrierVehicleTypes(scenario);
 
         Controler controler = new Controler(scenario);
@@ -93,7 +102,11 @@ public final class RunChessboard {
                 final LegHistogram withoutFreight = new LegHistogram(900);
                 binder().requestInjection(withoutFreight);
 
-                final FreightAnalysisEventHandler faeh = new FreightAnalysisEventHandler(scenario.getNetwork(), scenario.getVehicles(),carriers);
+
+                Vehicles vehicles = new VehicleUtils().createVehiclesContainer();
+                File vehiclesFile = new File("src/test/java/org/matsim/project/output_allVehicles.xml.gz");
+                new MatsimVehicleReader(vehicles).readFile(vehiclesFile.getAbsolutePath());
+                faeh = new FreightAnalysisEventHandler(scenario.getNetwork(), vehicles,carriers);
                 binder().requestInjection(faeh);
 
 
@@ -121,7 +134,14 @@ public final class RunChessboard {
                         withoutFreight.writeGraphic(dir + "/" + event.getIteration() + ".legHistogram_withoutFreight.png");
                         withoutFreight.reset(event.getIteration());
 
-                        faeh.exportServiceInfo(dir+"/" + event.getIteration() +"/");
+                        String faehExportdir = dir;
+
+                        faeh.exportServiceInfo(faehExportdir, true);
+                        faeh.exportVehicleTypeStats(faehExportdir, true);
+                        faeh.exportShipmentInfo(faehExportdir, true);
+                        faeh.exportVehicleTripInfo(faehExportdir, true);
+                        faeh.exportVehicleInfo(faehExportdir, true);
+                        faeh.reset();
                     }
                 });
             }
@@ -143,26 +163,16 @@ public final class RunChessboard {
     public final Config prepareConfig(){
         final URL url = ExamplesUtils.getTestScenarioURL("freight-chessboard-9x9");
         final URL configURL = IOUtils.extendUrl(url, "config.xml");
-        config = ConfigUtils.loadConfig(configURL  );
+        config = ConfigUtils.loadConfig(configURL);
         FreightConfigGroup freightConfigGroup = ConfigUtils.addOrGetModule(config, FreightConfigGroup.class);
         freightConfigGroup.setCarriersFile("carrierPlans.xml");
         freightConfigGroup.setCarriersVehicleTypesFile("vehicleTypes.xml");
         config.controler().setOverwriteFileSetting( OutputDirectoryHierarchy.OverwriteFileSetting.overwriteExistingFiles );
         config.global().setRandomSeed(4177);
-        config.controler().setOutputDirectory("./output/");
+        config.controler().setOutputDirectory("output");
+        config.controler().setLastIteration(1);
         return config;
     }
-
-    private static void createOutputDir(String outdir){
-        File dir = new File(outdir);
-        // if the directory does not exist, create it
-        if (!dir.exists()){
-            System.out.println("creating directory "+outdir);
-            boolean result = dir.mkdirs();
-            if(result) System.out.println(outdir+" created");
-        }
-    }
-
 
     private static class MyCarrierScoringFunctionFactory implements CarrierScoringFunctionFactory {
 

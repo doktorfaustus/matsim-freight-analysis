@@ -1,6 +1,8 @@
 package org.matsim.project;
 
 import org.matsim.api.core.v01.Id;
+import org.matsim.api.core.v01.events.LinkEnterEvent;
+import org.matsim.api.core.v01.events.LinkLeaveEvent;
 import org.matsim.api.core.v01.events.PersonLeavesVehicleEvent;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.contrib.freight.carrier.Carrier;
@@ -15,6 +17,7 @@ public class FreightAnalysisVehicleTracking {
 
 	private HashMap<Id<Vehicle>, VehicleTracker> trackers = new HashMap<>();
 	private HashMap<Id<Person>, Id<Vehicle>> driver2VehicleId = new HashMap<>();
+	private HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap<>();
 
 	public Id<Vehicle> getDriver2VehicleId(Id<Person> driverId) {
 		return driver2VehicleId.get(driverId);
@@ -25,6 +28,18 @@ public class FreightAnalysisVehicleTracking {
 		trackers.putIfAbsent(vehicle.getId(), new VehicleTracker(vehicle));
 	}
 
+	public void trackLinkEnterEvent(LinkEnterEvent linkEnterEvent) {
+		vehiclesOnLink.put(linkEnterEvent.getVehicleId(), linkEnterEvent.getTime());
+	}
+
+	public void trackLinkLeaveEvent(LinkLeaveEvent linkLeaveEvent, double length) {
+		if (trackers.containsKey(linkLeaveEvent.getVehicleId())) {
+			if (vehiclesOnLink.containsKey(linkLeaveEvent.getVehicleId())) {
+				Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
+				addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, length, false);
+			}
+		}
+	}
 	// register a leg vor a vehicle providing travel time and travelDistance
 	public void addLeg(Id<Vehicle> vehId, Double travelTime, Double travelDistance, Boolean isEmpty) {
 		if (!trackers.containsKey(vehId)) {
@@ -107,6 +122,7 @@ public class FreightAnalysisVehicleTracking {
 		return(distance * vehicleType.getCostInformation().getCostsPerMeter()
 				+  time * vehicleType.getCostInformation().getCostsPerSecond());
 	}
+
 }
 class VehicleTracker {
 	public double lastExit;

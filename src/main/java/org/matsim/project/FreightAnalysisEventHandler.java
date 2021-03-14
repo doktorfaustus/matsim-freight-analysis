@@ -16,13 +16,15 @@ import org.matsim.contrib.freight.events.eventhandler.ShipmentDeliveredEventHand
 import org.matsim.contrib.freight.events.eventhandler.ShipmentPickedUpEventHandler;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.vehicles.Vehicle;
-import org.matsim.vehicles.VehicleType;
 import org.matsim.vehicles.Vehicles;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 
@@ -36,10 +38,11 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	private final Vehicles vehicles;
 	private Network network;
 	private Carriers carriers;
-	HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap<>();
-	FreightAnalysisVehicleTracking vehicleTracking = new FreightAnalysisVehicleTracking();
-	FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
-	FreightAnalysisServiceTracking serviceTracking = new FreightAnalysisServiceTracking();
+	private	Integer iterationCount=0;
+	private HashMap<Id<Vehicle>, Double> vehiclesOnLink = new HashMap<>();
+	private FreightAnalysisVehicleTracking vehicleTracking = new FreightAnalysisVehicleTracking();
+	private FreightAnalysisShipmentTracking shipmentTracking = new FreightAnalysisShipmentTracking();
+	private FreightAnalysisServiceTracking serviceTracking = new FreightAnalysisServiceTracking();
 
 	public FreightAnalysisEventHandler(Network network, Vehicles vehicles, Carriers carriers) {
 		this.network = network;
@@ -110,18 +113,12 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	// link events are used to calculate vehicle travel time and distance
 	@Override
 	public void handleEvent(LinkEnterEvent linkEnterEvent) {
-		vehiclesOnLink.put(linkEnterEvent.getVehicleId(), linkEnterEvent.getTime());
+		vehicleTracking.trackLinkEnterEvent(linkEnterEvent);
 	}
 
 	@Override
 	public void handleEvent(LinkLeaveEvent linkLeaveEvent) {
-		if (vehiclesOnLink.containsKey(linkLeaveEvent.getVehicleId())) {
-			Double onLinkTime = vehiclesOnLink.get(linkLeaveEvent.getVehicleId()) - linkLeaveEvent.getTime();
-			Double linkLength = network.getLinks().get(linkLeaveEvent.getLinkId()).getLength();
-
-			// (the method checks for itself whether the vehicle is to be tracked or not)
-			vehicleTracking.addLeg(linkLeaveEvent.getVehicleId(), onLinkTime, linkLength, false);
-		}
+		vehicleTracking.trackLinkLeaveEvent(linkLeaveEvent, network.getLinks().get(linkLeaveEvent.getLinkId()).getLength());
 	}
 
 	// Person<>Vehicle relations and vehicle usage times are tracked
@@ -174,8 +171,10 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		exportVehicleInfo(path, false);
 	}
 	public void exportVehicleInfo(String path, Boolean exportGuesses) {
+		path = getIterationDirectory(path);
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleStats.tsv"));
+			HashMap<String, HashSet<String>> carrierVehicleStatistics = new HashMap<>();
 			out.write("vehicleId	vehicleType	carrierId	driverID	usageTime	roadTime	travelDistance	vehicleCost	tripCount");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = vehicleTracking.getTrackers();
@@ -183,9 +182,25 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				VehicleTracker tracker = trackers.get(vehId);
 				String lastDriverIdString = id2String(tracker.lastDriverId);
 				// if the carrier is not certain, export the guess if that is wanted.
-				String carrierIdString = (tracker.carrierId==null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
-				out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.usageTime.toString() + "	" + tracker.roadTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size());
-				out.newLine();
+				String carrierIdString = (tracker.carrierId == null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
+				// vehicle statistics are collected per carrier...
+				if (!carrierVehicleStatistics.containsKey(carrierIdString)) {
+					carrierVehicleStatistics.put(carrierIdString, new HashSet<>());
+				}
+				String vehicleInfoString = vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + carrierIdString + "	" + lastDriverIdString + "	" + tracker.usageTime.toString() + "	" + tracker.roadTime.toString() + "	" + tracker.travelDistance.toString() + "	" + tracker.cost.toString() + "	" + tracker.tripHistory.size();
+				carrierVehicleStatistics.get(carrierIdString).add(vehicleInfoString);
+			}
+			// ...and then written into individual and a single file.
+			for (String carrierIdString : carrierVehicleStatistics.keySet()){
+				BufferedWriter carrierOutFile = new BufferedWriter(new FileWriter(path + "/carrier_" + carrierIdString + "_vehicleStats.tsv"));
+				carrierOutFile.write("vehicleId	vehicleType	carrierId	driverID	usageTime	roadTime	travelDistance	vehicleCost	tripCount");
+				for(String line: carrierVehicleStatistics.get(carrierIdString)){
+					carrierOutFile.write(line);
+					carrierOutFile.newLine();
+					out.write(line);
+					out.newLine();
+				}
+				carrierOutFile.close();
 			}
 			out.close();
 			System.out.println("File created successfully");
@@ -199,11 +214,13 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		exportVehicleTripInfo(path, false );
 	}
 	public void exportVehicleTripInfo(String path, Boolean exportGuesses) {
+		path = getIterationDirectory(path);
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/freightVehicleTripStats.tsv"));
 			out.write("vehicleId	vehicleType	tripNumber	carrierId	driverId	tripRoadTime	tripDistance	tripVehicleCost");
 			out.newLine();
 			HashMap<Id<Vehicle>, VehicleTracker> trackers = vehicleTracking.getTrackers();
+			HashMap<String, HashSet<String>> carrierTripStatistics = new HashMap<>();
 			for (Id<Vehicle> vehId : trackers.keySet()) {
 				VehicleTracker tracker = trackers.get(vehId);
 				Integer i = 0;
@@ -211,10 +228,27 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 					// if info is not certain, export the guess if that is wanted.
 					String driverIdString = trip.driverId == null ? "" : trip.driverId.toString();
 					String carrierIdString = (tracker.carrierId == null && exportGuesses) ? "?" + id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
-					out.write(vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost);
-					out.newLine();
+					// trip statistics are collected per carrier...
+					if (!carrierTripStatistics.containsKey(carrierIdString)) {
+						carrierTripStatistics.put(carrierIdString, new HashSet<>());
+					}
+					String vehicleTripInfoString = vehId.toString() + "	" + tracker.vehicleType.getId().toString() + "	" + i.toString() + "	" + carrierIdString + "	" + driverIdString + "	" + trip.travelTime + "	" + trip.travelDistance + "	" + trip.cost;
+					carrierTripStatistics.get(carrierIdString).add(vehicleTripInfoString);
 					i++;
 				}
+			}
+			// ...and then written into individual and a single file.
+			for (String carrierIdString : carrierTripStatistics.keySet()){
+				BufferedWriter carrierOutFile = new BufferedWriter(new FileWriter(path + "/carrier_" + carrierIdString + "_tripStats.tsv"));
+				carrierOutFile.write("vehicleId	vehicleType	tripNumber	carrierId	driverId	tripRoadTime	tripDistance	tripVehicleCost");
+				carrierOutFile.newLine();
+				for(String line: carrierTripStatistics.get(carrierIdString)){
+					carrierOutFile.write(line);
+					carrierOutFile.newLine();
+					out.write(line);
+					out.newLine();
+				}
+				carrierOutFile.close();
 			}
 			out.close();
 			System.out.println("File created successfully");
@@ -224,18 +258,19 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	}
 
 	// Export Vehicle Statistics grouped by VehicleType to individual TSV files per carrier
-	public void exportCarrierInfo(String path){
+	public void exportVehicleTypeStats(String path){
 		//there are no guesses to be exported as of now, still having this method to keep the export calls consistent
-		exportCarrierInfo(path, false);
+		exportVehicleTypeStats(path, false);
 	}
-	public void exportCarrierInfo(String path, Boolean exportGuesses) {
+	public void exportVehicleTypeStats(String path, Boolean exportGuesses) {
+		path = getIterationDirectory(path);
 		try {
 			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/carrierStats.tsv"));
 			singleFile.write("carrierId	vehicleType	vehicleCount	totalDistance	totalServiceTime	totalRoadTime	totalCost");
 			singleFile.newLine();
 			for (Carrier carrier : carriers.getCarriers().values()) {
 			HashMap<String, CarrierVehicleTypeStats> vehicleTypeStatsMap = new HashMap<>();
-				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_Stats.tsv"));
+				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_VehicleTypeStats.tsv"));
 				for (VehicleTracker tracker : vehicleTracking.getTrackers().values()) {
 					// if desired get carrierIdString, in which case the vehicleType gets the "?" prefix to separate guessed vehicle connections from non-guessed ones, even if they are of the same vehicle type
 					String carrierIdString = tracker.carrierId==null && exportGuesses ? id2String(tracker.carrierIdGuess) : id2String(tracker.carrierId);
@@ -270,11 +305,22 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		}
 	}
 
+	private String getIterationDirectory(String parentDirectory) {
+		String path = parentDirectory + "/it_" + iterationCount.toString(); // create one subfolder per iteration
+		try {
+			Files.createDirectories(Paths.get(path));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return(path);
+	}
+
 	// Export Statistics of performed services
 	public void exportServiceInfo(String path){
 		exportServiceInfo(path, false);
 	}
 	public void exportServiceInfo(String path, Boolean exportGuesses) {
+		path = getIterationDirectory(path);
 		try {
 			BufferedWriter out = new BufferedWriter(new FileWriter(path + "/serviceStats.tsv"));
 			out.write("carrierId	serviceId	driverId	vehicleId	serviceETA	tourETA 	arrivalTime");
@@ -308,12 +354,13 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 		exportShipmentInfo(path, false);
 	}
 	public void exportShipmentInfo(String path, Boolean exportGuesses) {
+		path = getIterationDirectory(path);
 		try {
 			BufferedWriter singleFile = new BufferedWriter(new FileWriter(path + "/shipmentStats.tsv"));
 			singleFile.write("carrierId	shipmentId	driverId	vehicleId	pickupTime	deliveryTime	deliveryDuration	beelineDistance");
 			singleFile.newLine();
 			for (Carrier carrier : carriers.getCarriers().values()) {
-				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/shipments_carrier_" + carrier.getId().toString() + ".tsv"));
+				BufferedWriter out = new BufferedWriter(new FileWriter(path + "/carrier_" + carrier.getId().toString() + "_ShipmentStats.tsv"));
 				out.write("carrierId	shipmentId	driverId	vehicleId	pickupTime	deliveryTime	deliveryDuration	beelineDistance");
 				out.newLine();
 				for (CarrierShipment shipment : carrier.getShipments().values()) {
@@ -346,14 +393,23 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 
 	// reset the EventHandler, would typically be done between iterations of a simulation
 	public void reset(){
+		iterationCount++;
 		this.vehiclesOnLink = new HashMap<>();
 		this.vehicleTracking = new FreightAnalysisVehicleTracking();
 		this.shipmentTracking = new FreightAnalysisShipmentTracking();
 		this.serviceTracking = new FreightAnalysisServiceTracking();
 		init();
 	}
-	
+
 	private String id2String(Id id){ //Failsafe Id to String - Converter, because Id.toString() throws Exception if the Id is null.
 		return id==null?" ":id.toString(); // return space because instead of empty string because TSV files get confused otherwise
+	}
+
+	private class CarrierVehicleTypeStats {
+		Integer vehicleCount=0;
+		Double totalDistance=0.0;
+		Double totalRoadTime=0.0;
+		Double totalServiceTime=0.0;
+		Double totalCost=0.0;
 	}
 }

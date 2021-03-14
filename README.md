@@ -1,4 +1,5 @@
 # matsim-freight-analysis
+_TL;DR: For license, see bottom section._
 
 matsim-freight-analysis provides basic functionality for generating basic statistics about vehicles, carriers, shipments and services in matsim runs.
 
@@ -55,3 +56,7 @@ Several Limitations still exist:
 2.  By now, all functionality matching objects from the jsprit side (carriers, shipments and services) to the MATSim side (vehicles or drivers) rely on educated guesses whose quality heavily depends on the individual scenario. The lesser correlation of time windows and links for shipments and services, the better the guesses will be.
 3.  If you are using LSP type Events (see [GitHub](https://github.com/matsim-org/matsim-libs/tree/3bd8e6f6a227181ca382d690f5ff37cf0b4d9afa/contribs/freight/src/main/java/org/matsim/contrib/freight/events)), guesses will not be needed anymore, but the handling of those Events is merely based on theoretical evaluation of the structure of those events and therefore IS NOT TESTED IN ANY WAY and will most likely not work out of the box. If you have sample output of such a scenario, feel free to share it me so I can maintain the tool or do it yourself and open a pull request. As of 02/21 it is not clear whether matsim-freight will move in the direction of throwing those events or extending the activity events to resolve the need for guessing. If necessary, this tool will abandon the LSP Event Handling and move on to whichever direction is chosen by the matsim-freight maintainers.
 
+## LICENSE
+The **MATSim program code** in this project is distributed under the terms of the [GNU General Public License as published by the Free Software Foundation (version 2)](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html). The MATSim program code are files that reside in the `src` directory hierarchy and typically end with `*.java`.
+
+**Other data files**, in particular in `scenarios`, have their own individual licenses that need to be individually clarified with the copyright holders.
