@@ -6,7 +6,10 @@ output:
   pdf_document: default
 ---
 
-# Dokument
+# Example plots with R
+
+This file is not meant as a ready-to-run plot generator, but as a stepping stone to create own plots using the data by providing code examples.
+For quick results, change the paths in the setup chunk to your analysis output files and compile the Document.
 
 ```{r setup, message=FALSE, warning=FALSE, echo=FALSE}
 library(tidyverse)

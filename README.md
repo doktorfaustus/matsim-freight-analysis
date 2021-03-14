@@ -42,7 +42,7 @@ You can specify the output directory and whether the output should include guess
 
 ### Output format
 
-Files are exported as .tsv (tab-separated-values). The first row contains a description of the columns contents. Carrier, shipment and service info are exported to single files for further analysis (e.g. with R) and to separate files grouped by carriers for fast manual evaluation.
+Files are exported as .tsv (tab-separated-values). The first row contains a description of the columns contents. Carrier, shipment and service info are exported to single files for further analysis (e.g. with R, see also `postprocessing_example.Rmd`) and to separate files grouped by carriers for fast manual evaluation.
 Guesses are preceeded by "?". Data dependent from the guess (e.g. travel time of a guessed vehicle) are not preceeded by another "?", if they aren't a guess as well. 
 
 

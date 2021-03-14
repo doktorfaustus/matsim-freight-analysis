@@ -12,15 +12,15 @@ import java.io.File;
 
 public class RunFreightAnalysis {
     public static void main(String[] args) {
-        // benoetigte Dateien:
         RunFreightAnalysis rfa = new RunFreightAnalysis();
+        // path to your output files:
         String basePath = "scenarios/output100";
         basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
         rfa.runAnalysis(basePath);
     }
     public RunFreightAnalysis() { }
     
-    private void runAnalysis(String basePath){//Dateipfade uebergeben lassen
+    private void runAnalysis(String basePath){
        File networkFile = new File(basePath + "/output_network.xml.gz");
        File carrierFile = new File(basePath + "/output_carriers.xml");
        File vehiclesFile = new File(basePath + "/output_allVehicles.xml.gz");
@@ -40,6 +40,9 @@ public class RunFreightAnalysis {
 
        eventsManager.initProcessing();
        MatsimEventsReader eventsReader = new MatsimEventsReader(eventsManager);
+
+
+
        eventsReader.readFile(eventsFile.getAbsolutePath());
        eventsManager.finishProcessing();
        freightEventHandler.exportVehicleInfo("freightOutput", true);
