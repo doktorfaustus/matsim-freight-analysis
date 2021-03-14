@@ -14,8 +14,9 @@ public class RunFreightAnalysis {
     public static void main(String[] args) {
         RunFreightAnalysis rfa = new RunFreightAnalysis();
         // path to your output files:
-        String basePath = "scenarios/output100";
-        basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
+        // (For a quick start, run the "RunFAIT" test to generate sample output from the chessboard-example and then run the analysis on that:)
+        String basePath = "src/test/output/chessboard/matsim";
+        //basePath = "/Users/jakob/debianserv/data/Uni/Master/2020_WS/MATSim_Advanced/matsim-freight/Input_KMT/21_ICEVBEV_NwCE_BVWP_10000it_DC_noTax";
         rfa.runAnalysis(basePath);
     }
     public RunFreightAnalysis() { }
