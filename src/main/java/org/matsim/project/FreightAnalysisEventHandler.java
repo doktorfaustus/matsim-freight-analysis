@@ -156,8 +156,8 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 	public void handleEvent(LSPServiceStartEvent event) {
 		serviceTracking.handleStartEvent(event);
 		// as we know the driver of a service now, we can assign the shipment's carrier to the driver's vehicle.
-		if (shipmentTracking.getShipments().containsKey(event.getService().getId()) && vehicleTracking.getDriver2VehicleId(event.getDriverId())!=null){
-			vehicleTracking.addCarrier2Vehicle(vehicleTracking.getDriver2VehicleId(event.getDriverId()), shipmentTracking.getShipments().get(event.getService()).carrierId);
+		if (serviceTracking.getCarrierServiceTrackers().containsKey(event.getService().getId()) && vehicleTracking.getDriver2VehicleId(event.getDriverId())!=null){
+			vehicleTracking.addCarrier2Vehicle(vehicleTracking.getDriver2VehicleId(event.getDriverId()), serviceTracking.getCarrierServiceTrackers().get(event.getService()).carrierId);
 		}
 	}
 
@@ -330,6 +330,7 @@ public class FreightAnalysisEventHandler implements  ActivityStartEventHandler, 
 				String carrierIdString = id2String(carrierServiceTracker.carrierId);
 				BufferedWriter out_carrier = new BufferedWriter(new FileWriter(path+"/carrier_" + carrierIdString + "_ServiceStats.tsv"));
 				out_carrier.write("carrierId	serviceId	driverId	vehicleId	serviceETA	tourETA 	arrivalTime");
+				out_carrier.newLine();
 				for (ServiceTracker serviceTracker : carrierServiceTracker.serviceTrackers.values()){
 					String serviceIdString = id2String(serviceTracker.service.getId());
 					// if info is not certain, export the guess if that is wanted.
