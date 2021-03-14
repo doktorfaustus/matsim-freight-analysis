@@ -13,7 +13,7 @@ public class RunFAIT {
 	public void runFreightAnalysis(){
 		/**
 		 * Integration Test to check whether the analysis runs at all, in form of an event handler plugged into the chessboard example scenario.
-		 */
+		 **/
 		try{
 			RunChessboardWithFreight rc = new RunChessboardWithFreight();
 			Config config = rc.prepareConfig();
